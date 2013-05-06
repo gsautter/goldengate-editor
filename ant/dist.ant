@@ -53,7 +53,6 @@
 			<fileset dir="${dist.home}/" includes="GoldenGateStarter.jar"/>
 			<fileset dir="${dist.home}" includes="Plugins/**"/>
 			<fileset dir="." includes="LICENSE.txt"/>
-			<fileset dir="${file.home}/editor" includes="README.txt"/>
 		</zip>
 	</target>
 	
@@ -77,7 +76,6 @@
 			<fileset dir="${file.home}/versionpacker"/>
 			<fileset dir="${dist.home}/" includes="_VersionPacker.jar"/>
 			<fileset dir="." includes="LICENSE.txt"/>
-			<fileset dir="${file.home}/versionpacker" includes="README.txt"/>
 		</zip>
 	</target>
 	
@@ -101,7 +99,6 @@
 			<fileset dir="${file.home}/configurationpacker"/>
 			<fileset dir="${dist.home}/" includes="_ConfigurationPacker.jar"/>
 			<fileset dir="." includes="LICENSE.txt"/>
-			<fileset dir="${file.home}/configurationpacker" includes="README.txt"/>
 		</zip>
 	</target>
 </project>
