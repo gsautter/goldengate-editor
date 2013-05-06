@@ -1,0 +1,29 @@
+// GoldenGATE core component jar files
+EasyIO.jar
+  mail.jar
+Gamta.jar
+GoldenGATE.jar
+HtmlXmlUtil.jar
+StringUtils.jar
+
+// facilities for starting GoldenGATE
+GoldenGATE.bat
+GoldenGATE.exe
+GoldenGATE.sh
+GoldenGateStarter.jar
+
+// user information files
+License.txt
+README.txt
+
+// config files for local environment
+Parameters.cnfg
+ConfigHosts.cnfg
+UpdateHosts.cnfg
+
+// utility batches
+CleanupLogFiles.bat
+CleanupOldFiles.bat
+
+// additional data
+Data/GoldenGATE.logo.gif

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--
+	Does all the packing. That is, creates the files that live in dist/
+-->
+
+<project name="dist">
+	<target name="zips" depends="editorzip,vpackerzip,cpackerzip">
+	</target>
+	
+	
+	<target name="editor">
+		<delete file="${jar.editor}" />
+		<jar destfile="${jar.editor}" manifest="${file.home}/MANIFEST.editor.MF">
+			<fileset dir="${build.home}/classes" includes="**/**.class" excludes="**/utilities/**.class"/>
+			<fileset dir="${src.home}" includes="**/**.java" excludes="**/utilities/**.java"/>
+			<fileset dir="." includes="LICENSE.txt"/>
+		</jar>
+	</target>
+	
+	<target name="fileconfigmanager">
+		<delete file="${jar.fileconfigmanager}" />
+		<jar destfile="${jar.fileconfigmanager}">
+			<fileset dir="${build.home}/classes" includes="**/FileConfigurationManager.class"/>
+			<fileset dir="${build.home}/classes" includes="**/FileConfigurationManager**.class"/>
+			<fileset dir="${src.home}" includes="**/configuration/FileConfigurationManager.java"/>
+			<fileset dir="." includes="LICENSE.txt"/>
+		</jar>
+	</target>
+	
+	<target name="starter">
+		<delete file="${jar.starter}"/>
+		<jar destfile="${jar.starter}" manifest="${file.home}/MANIFEST.starter.MF">
+			<fileset dir="${build.home}/classes" includes="**/GoldenGateStarter.class"/>
+			<fileset dir="${build.home}/classes" includes="**/GoldenGateStarter**.class"/>
+			<fileset dir="${build.home}/classes" includes="**/GoldenGateConstants.class"/>
+			<fileset dir="${build.home}/classes" includes="**/GoldenGateConstants**.class"/>
+			<fileset dir="${build.home}/classes" includes="**/UpdateUtils.class"/>
+			<fileset dir="${build.home}/classes" includes="**/UpdateUtils**.class"/>
+			<fileset dir="${src.home}" includes="**/GoldenGateStarter.java"/>
+			<fileset dir="${src.home}" includes="**/GoldenGateConstants.java"/>
+			<fileset dir="${src.home}" includes="**/UpdateUtils.java"/>
+			<fileset dir="." includes="LICENSE.txt"/>
+		</jar>
+	</target>
+	
+	<target name="editorzip" depends="editor,fileconfigmanager,starter">
+		<delete file="${app.editor}" />
+		<zip destfile="${app.editor}">
+			<fileset dir="${lib.home}"/>
+			<fileset dir="${file.home}/editor"/>
+			<fileset dir="${dist.home}/" includes="GoldenGATE.jar"/>
+			<fileset dir="${dist.home}/" includes="GoldenGateStarter.jar"/>
+			<fileset dir="${dist.home}" includes="Plugins/**"/>
+			<fileset dir="." includes="LICENSE.txt"/>
+			<fileset dir="${file.home}/editor" includes="README.txt"/>
+		</zip>
+	</target>
+	
+	
+	<target name="vpacker">
+		<delete file="${jar.vpacker}"/>
+		<jar destfile="${jar.vpacker}" manifest="${file.home}/MANIFEST.versionpacker.MF">
+			<fileset dir="${build.home}/classes" includes="**/VersionPacker.class"/>
+			<fileset dir="${build.home}/classes" includes="**/VersionPacker**.class"/>
+			<fileset dir="${build.home}/classes" includes="**/PackerUtils.class"/>
+			<fileset dir="${build.home}/classes" includes="**/PackerUtils**.class"/>
+			<fileset dir="${src.home}" includes="**/VersionPacker.java"/>
+			<fileset dir="${src.home}" includes="**/PackerUtils.java"/>
+			<fileset dir="." includes="LICENSE.txt"/>
+		</jar>
+	</target>
+	
+	<target name="vpackerzip" depends="vpacker">
+		<delete file="${app.vpacker}"/>
+		<zip destfile="${app.vpacker}">
+			<fileset dir="${file.home}/versionpacker"/>
+			<fileset dir="${dist.home}/" includes="_VersionPacker.jar"/>
+			<fileset dir="." includes="LICENSE.txt"/>
+			<fileset dir="${file.home}/versionpacker" includes="README.txt"/>
+		</zip>
+	</target>
+	
+	
+	<target name="cpacker">
+		<delete file="${jar.cpacker}"/>
+		<jar destfile="${jar.cpacker}" manifest="${file.home}/MANIFEST.configurationpacker.MF">
+			<fileset dir="${build.home}/classes" includes="**/ConfigurationPacker.class"/>
+			<fileset dir="${build.home}/classes" includes="**/ConfigurationPacker**.class"/>
+			<fileset dir="${build.home}/classes" includes="**/PackerUtils.class"/>
+			<fileset dir="${build.home}/classes" includes="**/PackerUtils**.class"/>
+			<fileset dir="${src.home}" includes="**/VersionPacker.java"/>
+			<fileset dir="${src.home}" includes="**/PackerUtils.java"/>
+			<fileset dir="." includes="LICENSE.txt"/>
+		</jar>
+	</target>
+	
+	<target name="cpackerzip" depends="cpacker">
+		<delete file="${app.cpacker}"/>
+		<zip destfile="${app.cpacker}">
+			<fileset dir="${file.home}/configurationpacker"/>
+			<fileset dir="${dist.home}/" includes="_ConfigurationPacker.jar"/>
+			<fileset dir="." includes="LICENSE.txt"/>
+			<fileset dir="${file.home}/configurationpacker" includes="README.txt"/>
+		</zip>
+	</target>
+</project>

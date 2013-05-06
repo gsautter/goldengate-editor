@@ -1,0 +1,1 @@
+java -jar GoldenGateStarter.jar
