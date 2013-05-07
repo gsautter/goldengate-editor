@@ -5,7 +5,7 @@
 -->
 
 <project name="import">
-	<target name="fetch" depends="fetch-su,fetch-hxu,fetch-gamta,fetch-eio" />
+	<target name="fetch" depends="fetch-su,fetch-hxu,fetch-gamta,fetch-eio,fetch-icmlib" />
 	
 	
 	<target name="check-fetch-su" unless="su.exists">
@@ -34,5 +34,12 @@
 	</target>
 	<target name="fetch-eio" depends="check-fetch-eio" if="${eio.exists}">
     	<copy file="../idaho-core/dist/EasyIO.jar" todir="${lib.home}" overwrite="true" verbose="false" />
+	</target>
+	
+	<target name="check-fetch-icmlib" unless="icmlib.exists">
+		<available property="icmlib.exists" file="../idaho-core/lib/mail.jar"/>
+	</target>
+	<target name="fetch-icmlib" depends="check-fetch-icmlib" if="${icmlib.exists}">
+    	<copy file="../idaho-core/lib/mail.jar" todir="${lib.home}" overwrite="true" verbose="false" />
 	</target>
 </project>
