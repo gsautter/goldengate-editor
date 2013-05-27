@@ -4193,7 +4193,7 @@ public class AnnotationEditorPanel extends JPanel implements GoldenGateConstants
 						return;
 					}
 					else if ('s' == nKeyChar) {
-						this.splitAnnotation();
+						this.splitAnnotation(ke.isShiftDown(), false);
 						return;
 					}
 					else if ((keyChar == 8) || (keyChar == 127)) {
@@ -7209,14 +7209,40 @@ public class AnnotationEditorPanel extends JPanel implements GoldenGateConstants
 				}
 			});
 			this.contextMenu.add(mi);
-			mi = new JMenuItem("Split Annotation");
-			mi.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent ae) {
-					parent.writeLog("Context Menu --> Split Annotation");					
-					splitAnnotation();
-				}
-			});
-			this.contextMenu.add(mi);
+			if (selection.size() == 1) {
+				mi = new JMenuItem("Split Annotation before '" + selection.firstValue() + "'");
+				mi.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent ae) {
+						parent.writeLog("Context Menu --> Split Before");					
+						splitAnnotation(false, false);
+					}
+				});
+				this.contextMenu.add(mi);
+				mi = new JMenuItem("Split Annotation around '" + selection.firstValue() + "'");
+				mi.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent ae) {
+						parent.writeLog("Context Menu --> Split Around");					
+						splitAnnotation(false, true);
+					}
+				});
+				this.contextMenu.add(mi);
+				mi = new JMenuItem("Split Annotation before all '" + selection.firstValue() + "'");
+				mi.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent ae) {
+						parent.writeLog("Context Menu --> Split Before All");					
+						splitAnnotation(true, false);
+					}
+				});
+				this.contextMenu.add(mi);
+				mi = new JMenuItem("Split Annotation around all '" + selection.firstValue() + "'");
+				mi.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent ae) {
+						parent.writeLog("Context Menu --> Split Around All");					
+						splitAnnotation(true, true);
+					}
+				});
+				this.contextMenu.add(mi);
+			}
 			
 			//	functions for moving annotation borders
 			if (selectedAnnotations.length != 0) {
@@ -8022,51 +8048,58 @@ public class AnnotationEditorPanel extends JPanel implements GoldenGateConstants
 		}
 	}
 	
-	void splitAnnotation() {
-		Annotation selection = this.annotateSelection(null, false);
+	void splitAnnotation(boolean all, boolean around) {
+		final Annotation selection = this.annotateSelection(null, false);
 		
 		if ((selection == null) || (selection.size() != 1)) {
-			JOptionPane.showMessageDialog(this, "Mark the one Token to split the Annotation before.", "Invalid Spilt Point", JOptionPane.ERROR_MESSAGE);
-		} else {
-			
-			int splitTokenIndex = selection.getStartIndex();
-			Annotation splitAnnotation = this.getAnnotationSurrounding(splitTokenIndex);
-			
-			if ((splitAnnotation != null) && (splitTokenIndex > splitAnnotation.getStartIndex()) && (splitTokenIndex < splitAnnotation.getEndIndex())) {
-				
-				//	create undo action
-				this.parent.enqueueRestoreMarkupUndoAction(splitAnnotation.getType(), "Split Annotation", splitAnnotation.getStartIndex(), splitAnnotation.size());
-				this.parent.storeUndoAction();
-				this.parent.writeLog("Split Annotations: '" + splitAnnotation.getType() + "' annotation split at '" + selection.getValue() + "'");
-				
-				//	perform split
-				Annotation firstAnnotation;
-				Annotation lastAnnotation;
-				if (splitAnnotation instanceof MutableAnnotation) {
-					firstAnnotation = this.content.addAnnotation(splitAnnotation.getType(), splitAnnotation.getStartIndex(), (splitTokenIndex - splitAnnotation.getStartIndex()));
-					lastAnnotation = this.content.addAnnotation(splitAnnotation.getType(), splitTokenIndex, (splitAnnotation.getEndIndex() - splitTokenIndex));
-				} else {
-					firstAnnotation = this.content.addAnnotation(splitAnnotation.getType(), splitAnnotation.getStartIndex(), (splitTokenIndex - splitAnnotation.getStartIndex()));
-					lastAnnotation = this.content.addAnnotation(splitAnnotation.getType(), splitTokenIndex, (splitAnnotation.getEndIndex() - splitTokenIndex));
-				}
-				firstAnnotation.copyAttributes(splitAnnotation);
-				lastAnnotation.copyAttributes(splitAnnotation);
-				this.content.removeAnnotation(splitAnnotation);
-				
-				//	propagate modification
-				this.parent.notifyDocumentMarkupModified();
-				this.refreshDisplay();
-			}
+			JOptionPane.showMessageDialog(this, "Mark the one Token to split the Annotation before or around.", "Invalid Spilt Point", JOptionPane.ERROR_MESSAGE);
+			return;
 		}
+		
+		//	get annotation to split
+		Annotation splitAnnotation = this.getAnnotationSurrounding(selection.getStartIndex());
+		if (splitAnnotation == null)
+			return;
+		
+		//	get splitting point(s)
+		Annotation[] splits = {Gamta.newAnnotation(splitAnnotation, null, (selection.getStartIndex() - splitAnnotation.getStartIndex()), selection.size())};
+		if (all) {
+			StringVector dict = new StringVector(annotateAllCaseSensitive);
+			dict.addElement(selection.firstValue());
+			splits = Gamta.extractAllContained(splitAnnotation, dict);
+		}
+		
+		//	check splits
+		int splitCount = 0;
+		for (int s = 0; s < splits.length; s++) {
+			if ((splits[s].getStartIndex() > 0) && (splits[s].getStartIndex() < (splitAnnotation.size() - (around ? 1 : 0))))
+				splitCount++;
+		}
+		if (splitCount == 0)
+			return;
+		
+		//	create undo action
+		this.parent.enqueueRestoreMarkupUndoAction(splitAnnotation.getType(), "Split Annotation", splitAnnotation.getStartIndex(), splitAnnotation.size());
+		this.parent.storeUndoAction();
+		this.parent.writeLog("Split Annotations: '" + splitAnnotation.getType() + "' annotation split at '" + selection.getValue() + "'");
+		
+		//	perform splits
+		for (int s = 0; s <= splits.length; s++) {
+			if ((s < splits.length) && (splits[s].getStartIndex() == 0))
+				continue;
+			int start = (splitAnnotation.getStartIndex() + ((s == 0) ? 0 : (splits[s-1].getStartIndex() + (around ? 1 : 0))));
+			int end = (splitAnnotation.getStartIndex() + ((s == splits.length) ? splitAnnotation.size() : splits[s].getStartIndex()));
+			Annotation annotation = this.content.addAnnotation(splitAnnotation.getType(), start, (end - start));
+			annotation.copyAttributes(splitAnnotation);
+		}
+		this.content.removeAnnotation(splitAnnotation);
+		
+		//	propagate modification
+		this.parent.notifyDocumentMarkupModified();
+		this.refreshDisplay();
 	}
 	
 	void renameAnnotations() {
-//		StringVector suggestions = new StringVector();
-//		suggestions.addContent(getAnnotationTypeSuggestions());
-//		suggestions.addContentIgnoreDuplicates(this.parent.getAnnotationTypes(true));
-//		String[] targetTypes = suggestions.toStringArray(); //this.parent.getAnnotationTypes(true);
-//		Arrays.sort(targetTypes, ANNOTATION_TYPE_ORDER);
-		
 		AnnotationFilter[] filters = this.getFilters(false);
 		AnnotationFilter initial = null;
 		Annotation selected = null;

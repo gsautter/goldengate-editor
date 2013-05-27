@@ -2827,7 +2827,7 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 	
 	private void splitAnnotation() {
 		this.writeLog("Main Menu --> Split Annotation");
-		this.annotationEditor.splitAnnotation();
+		this.annotationEditor.splitAnnotation(false, false);
 	}
 	
 	void splitDocument() {
