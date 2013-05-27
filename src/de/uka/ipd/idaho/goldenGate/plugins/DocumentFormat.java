@@ -511,7 +511,7 @@ public abstract class DocumentFormat extends FileFilter implements Resource {
 				if (DEBUG_CHAR_ENCODING) System.out.println("    - jumped to next tag: " + tag);
 			}
 			
-			//	html file, have to read header <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+			//	html file, have to read header <meta http-equiv="content-type" content="text/html; charset=UTF-8"> or <meta charset="UTF-8">
 			if (tag.toLowerCase().startsWith("<html")) {
 				
 				//	proceed until (a) encoding found, (b) end of HTML header reached, or (c) lookahead consumed
@@ -545,6 +545,10 @@ public abstract class DocumentFormat extends FileFilter implements Resource {
 							if (split != -1) {
 								encoding = encoding.substring(split + 1);
 								split = encoding.indexOf('"');
+								if (split == 0) {
+									encoding = encoding.substring(split + 1);
+									split = encoding.indexOf('"');
+								}
 								if (split != -1) {
 									encoding = encoding.substring(0, encoding.indexOf('"'));
 									if (DEBUG_CHAR_ENCODING) System.out.println("    - parsed encoding: " + encoding);
@@ -692,8 +696,6 @@ public abstract class DocumentFormat extends FileFilter implements Resource {
 	 * @throws IOException if any occurs while writing the document to the specified OutputStream
 	 */
 	public boolean saveDocument(QueriableAnnotation data, OutputStream out) throws IOException {
-//		Object encodingObject = data.getAttribute(ENCODING_ATTRIBUTE, defaultEncodingName);
-//		String encoding = ((encodingObject == null) ? null : encodingObject.toString());
 		String encoding = ((String) data.getAttribute(ENCODING_ATTRIBUTE));
 		if (!UTF_8_ENCODING_NAME.equals(encoding) && !UTF_16_LE_ENCODING_NAME.equals(encoding) && !UTF_16_BE_ENCODING_NAME.equals(encoding))
 			encoding = null;
@@ -707,8 +709,6 @@ public abstract class DocumentFormat extends FileFilter implements Resource {
 	 * @throws IOException if any occurs while writing the document to the specified OutputStream
 	 */
 	public boolean saveDocument(DocumentEditor data, OutputStream out) throws IOException {
-//		Object encodingObject = data.getContent().getAttribute(ENCODING_ATTRIBUTE, defaultEncodingName);
-//		String encoding = ((encodingObject == null) ? null : encodingObject.toString());
 		String encoding = ((String) data.getContent().getAttribute(ENCODING_ATTRIBUTE));
 		if (!UTF_8_ENCODING_NAME.equals(encoding) && !UTF_16_LE_ENCODING_NAME.equals(encoding) && !UTF_16_BE_ENCODING_NAME.equals(encoding))
 			encoding = null;
@@ -723,8 +723,6 @@ public abstract class DocumentFormat extends FileFilter implements Resource {
 	 * @throws IOException if any occurs while writing the document to the specified OutputStream
 	 */
 	public boolean saveDocument(DocumentEditor data, QueriableAnnotation doc, OutputStream out) throws IOException {
-//		Object encodingObject = data.getContent().getAttribute(ENCODING_ATTRIBUTE, defaultEncodingName);
-//		String encoding = ((encodingObject == null) ? null : encodingObject.toString());
 		String encoding = ((String) doc.getAttribute(ENCODING_ATTRIBUTE));
 		if (!UTF_8_ENCODING_NAME.equals(encoding) && !UTF_16_LE_ENCODING_NAME.equals(encoding) && !UTF_16_BE_ENCODING_NAME.equals(encoding))
 			encoding = null;
@@ -820,18 +818,6 @@ public abstract class DocumentFormat extends FileFilter implements Resource {
 		
 		//	last resort
 		else return new OutputStreamWriter(out);
-//		
-//		//	return default encoded writer
-//		else if (defaultEncodingName != null) {
-//			 return new OutputStreamWriter(out, defaultEncodingName);
-//		}
-//		
-//		else {
-//			String defaultEncoding = this.getFormatDefaultEncodingName();
-//			if (defaultEncoding != null)
-//				return new OutputStreamWriter(out, defaultEncoding);
-//			else return new OutputStreamWriter(out);
-//		}
 	}
 	
 	private static class EncodingCatcherOutputStream extends FilterOutputStream {
