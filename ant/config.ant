@@ -49,6 +49,9 @@
 	<!-- path to the .jar file that shall be created -->
 	<property name="jar.cpacker" value="${dist.home}/_ConfigurationPacker.jar" />
 	
+	<!-- path to the .jar file that shall be created -->
+	<property name="jar.plugininstaller" value="${dist.home}/Installer.jar" />
+	
 	<!-- path to the application .zip file that shall be created -->
 	<property name="app.editor" value="${dist.home}/GoldenGATE.zip" />
 	

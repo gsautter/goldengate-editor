@@ -18,6 +18,15 @@
 		</jar>
 	</target>
 	
+	<target name="plugininstaller">
+		<delete file="${jar.plugininstaller}"/>
+		<jar destfile="${jar.plugininstaller}" manifest="${file.home}/MANIFEST.plugininstaller.MF">
+			<fileset dir="${build.home}/classes" includes="**/PluginInstaller*.class"/>
+			<fileset dir="${src.home}" includes="**/PluginInstaller.java"/>
+			<fileset dir="." includes="LICENSE.txt"/>
+		</jar>
+	</target>
+	
 	<target name="fileconfigmanager">
 		<delete file="${jar.fileconfigmanager}" />
 		<jar destfile="${jar.fileconfigmanager}">
@@ -44,12 +53,13 @@
 		</jar>
 	</target>
 	
-	<target name="editorzip" depends="editor,fileconfigmanager,starter">
+	<target name="editorzip" depends="editor,plugininstaller,fileconfigmanager,starter">
 		<delete file="${app.editor}" />
 		<zip destfile="${app.editor}">
 			<fileset dir="${lib.home}"/>
 			<fileset dir="${file.home}/editor"/>
 			<fileset dir="${dist.home}/" includes="GoldenGATE.jar"/>
+			<fileset dir="${dist.home}/" includes="Installer.jar"/>
 			<fileset dir="${dist.home}/" includes="GoldenGateStarter.jar"/>
 			<fileset dir="${dist.home}" includes="Plugins/**"/>
 			<fileset dir="." includes="LICENSE.txt"/>
