@@ -10,7 +10,7 @@ Sun (r) Java Runtime Environment 1.5.0 or higher
 
 STARTING THE PROGRAM
 
-To start the GoldenGATE editor, you have several options:
+To start GoldenGATE Editor, you have several options:
 
 - Double click GoldenGate.exe
 
