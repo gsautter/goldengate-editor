@@ -8089,8 +8089,10 @@ public class AnnotationEditorPanel extends JPanel implements GoldenGateConstants
 				continue;
 			int start = (splitAnnotation.getStartIndex() + ((s == 0) ? 0 : (splits[s-1].getStartIndex() + (around ? 1 : 0))));
 			int end = (splitAnnotation.getStartIndex() + ((s == splits.length) ? splitAnnotation.size() : splits[s].getStartIndex()));
-			Annotation annotation = this.content.addAnnotation(splitAnnotation.getType(), start, (end - start));
-			annotation.copyAttributes(splitAnnotation);
+			if (start < end) {
+				Annotation annotation = this.content.addAnnotation(splitAnnotation.getType(), start, (end - start));
+				annotation.copyAttributes(splitAnnotation);
+			}
 		}
 		this.content.removeAnnotation(splitAnnotation);
 		
