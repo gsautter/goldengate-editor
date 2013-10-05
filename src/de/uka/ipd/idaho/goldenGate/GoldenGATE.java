@@ -218,7 +218,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		
 		final ArrayList lazyLoadRunnables = new ArrayList();
 		
-		//	do no pre-load in master configuration, as this likely is unnecessarily costly
+		//	do not pre-load in master configuration, as this likely is unnecessarily costly
 		if (!this.configuration.isMasterConfiguration()) {
 			
 			ssm.addStatusLine("Initializing Custom Functions ...");
@@ -1039,20 +1039,32 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		HelpChapter helpDocumentIo = new DynamicHelpChapter("Document IO", (dataBaseUrl + "DocumentIO.html"));
 		helpRoot.addSubChapter(helpDocumentIo);
 		
-		HelpChapter helpDocumentFormat = new DynamicHelpChapter("Document Formats", (dataBaseUrl + "DocumentFormats.html"));
-		helpRoot.addSubChapter(helpDocumentFormat);
+		HelpChapter helpDocumentFormats = new DynamicHelpChapter("Document Formats", (dataBaseUrl + "DocumentFormats.html"));
+		helpRoot.addSubChapter(helpDocumentFormats);
 		
-		HelpChapter helpDocumentViewer = new DynamicHelpChapter("Document Viewers", (dataBaseUrl + "DocumentViewers.html"));
-		helpRoot.addSubChapter(helpDocumentViewer);
+		HelpChapter helpDocumentViewers = new DynamicHelpChapter("Document Viewers", (dataBaseUrl + "DocumentViewers.html"));
+		helpRoot.addSubChapter(helpDocumentViewers);
 		
 		HelpChapter helpEditorExtensions = new DynamicHelpChapter("Editor Extensions", (dataBaseUrl + "EditorExtensions.html"));
 		helpRoot.addSubChapter(helpEditorExtensions);
 		
-		HelpChapter helpResourceManager = new DynamicHelpChapter("Plug-In Resources", (dataBaseUrl + "PlugInResources.html"));
-		helpRoot.addSubChapter(helpResourceManager);
+		HelpChapter helpResourceManagers = null;
+		HelpChapter helpPlugins = null;
+		HelpChapter helpCustomFunctions = null;
+		HelpChapter helpCustomShortcuts = null;
+		if (this.configuration.isMasterConfiguration()) {
+			helpResourceManagers = new DynamicHelpChapter("Plug-In Resources", (dataBaseUrl + "PlugInResources.html"));
+			helpRoot.addSubChapter(helpResourceManagers);
+			helpPlugins = new DynamicHelpChapter("Other Plug-Ins", (dataBaseUrl + "PlugIns.html"));
+			helpRoot.addSubChapter(helpPlugins);
+		}
+		else {
+			helpCustomFunctions = new DynamicHelpChapter("Markup Funktions", (dataBaseUrl + "PlugInResources.html"));
+			helpRoot.addSubChapter(helpResourceManagers);
+			helpCustomShortcuts = new DynamicHelpChapter("Editor Shortcuts", (dataBaseUrl + "PlugIns.html"));
+			helpRoot.addSubChapter(helpPlugins);
+		}
 		
-		HelpChapter helpPlugin = new DynamicHelpChapter("Other Plug-Ins", (dataBaseUrl + "PlugIns.html"));
-		helpRoot.addSubChapter(helpPlugin);
 		
 		GoldenGatePlugin[] plugins = this.getPlugins();
 		for (int p = 0; p < plugins.length; p++) {
@@ -1073,16 +1085,17 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 				}
 				
 				if (plugins[p] instanceof DocumentFormatProvider) {
-					helpDocumentFormat.addSubChapter(chapter);
+					helpDocumentFormats.addSubChapter(chapter);
 					integrated = true;
 				}
 				else if (plugins[p] instanceof ResourceManager) {
-					helpResourceManager.addSubChapter(chapter);
+					if (helpResourceManagers != null)
+						helpResourceManagers.addSubChapter(chapter);
 					integrated = true;
 				}
 				
 				if (plugins[p] instanceof DocumentViewer) {
-					helpDocumentViewer.addSubChapter(chapter);
+					helpDocumentViewers.addSubChapter(chapter);
 					integrated = true;
 				}
 				
@@ -1090,11 +1103,6 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 					helpEditorExtensions.addSubChapter(chapter);
 					integrated = true;
 				}
-//				
-//				if (plugins[p] instanceof ResourceManager) {
-//					helpResourceManager.addSubChapter(chapter);
-//					integrated = true;
-//				}
 				
 				if (plugins[p] instanceof CustomFunction.Manager)
 					integrated = true;
@@ -1105,24 +1113,54 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 				if (plugins[p] instanceof TokenizerManager)
 					integrated = true;
 				
-				if (!integrated)
-					helpPlugin.addSubChapter(chapter);
+				if (!integrated) {
+					if (helpPlugins != null)
+						helpPlugins.addSubChapter(chapter);
+				}
 			}
 		}
 		
 		if (this.customFunctionManager != null) {
-			HelpChapter chapter = this.customFunctionManager.getHelp();
-			if (chapter != null)
-				helpRoot.addSubChapter(chapter);
+			if (this.configuration.isMasterConfiguration()) {
+				HelpChapter chapter = this.customFunctionManager.getHelp();
+				if (chapter != null)
+					helpRoot.addSubChapter(chapter);
+			}
+			else {
+				String[] customFunctionNames = this.customFunctionManager.getResourceNames();
+				Arrays.sort(customFunctionNames);
+				for (int n = 0; n < customFunctionNames.length; n++) {
+					CustomFunction customFunction = this.customFunctionManager.getCustomFunction(customFunctionNames[n]);
+					if (customFunction != null) {
+						String helpText = customFunction.getHelpText();
+						if (helpText != null)
+							helpCustomFunctions.addSubChapter(new HelpChapter(customFunction.label, helpText));
+					}
+				}
+			}
 		}
 		
 		if (this.customShortcutManager != null) {
-			HelpChapter chapter = this.customShortcutManager.getHelp();
-			if (chapter != null)
-				helpRoot.addSubChapter(chapter);
+			if (this.configuration.isMasterConfiguration()) {
+				HelpChapter chapter = this.customShortcutManager.getHelp();
+				if (chapter != null)
+					helpRoot.addSubChapter(chapter);
+			}
+			else {
+				String[] customShortcutNames = this.customShortcutManager.getResourceNames();
+				Arrays.sort(customShortcutNames);
+				for (int n = 0; n < customShortcutNames.length; n++) {
+					CustomShortcut customShortcut = this.customShortcutManager.getCustomShortcut(customShortcutNames[n]);
+					if (customShortcut != null) {
+						String helpText = customShortcut.getHelpText();
+						if (helpText != null)
+							helpCustomShortcuts.addSubChapter(new HelpChapter(customShortcutNames[n], helpText));
+					}
+				}
+			}
 		}
 		
-		if (this.tokenizerManager != null) {
+		if ((this.tokenizerManager != null) && this.configuration.isMasterConfiguration()) {
 			HelpChapter chapter = this.tokenizerManager.getHelp();
 			if (chapter != null)
 				helpRoot.addSubChapter(chapter);
@@ -1966,31 +2004,16 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		if (this.customFunctionManager == null)
 			return new CustomFunction[0];
 		
-//		if (ssd != null)
-//			System.out.println("GoldenGATE: Loading custom functions");
-//		long start;
-//		long intermediate;
-		
-//		start = System.currentTimeMillis();
 		String[] customFunctionNames = this.customFunctionManager.getResourceNames();
 		Arrays.sort(customFunctionNames);
-//		intermediate = System.currentTimeMillis();
-//		if (ssd != null)
-//			System.out.println("  - got function names in " + (intermediate - start) + " ms");
 		
 		ArrayList customFunctions = new ArrayList();
 		for (int n = 0; n < customFunctionNames.length; n++) {
-			if (ssd != null) { 
+			if (ssd != null)
 				ssd.addStatusLine(" - " + customFunctionNames[n]);
-//				System.out.println("  - loading " + customFunctionNames[n] + " ...");
-			}
-//			start = System.currentTimeMillis();
 			CustomFunction customFunction = this.customFunctionManager.getCustomFunction(customFunctionNames[n]);
 			if (customFunction != null)
 				customFunctions.add(customFunction);
-//			intermediate = System.currentTimeMillis();
-//			if (ssd != null)
-//				System.out.println("  - loaded " + customFunctionNames[n] + " in " + (intermediate - start) + " ms");
 		}
 		return ((CustomFunction[]) customFunctions.toArray(new CustomFunction[customFunctions.size()]));
 	}
@@ -2024,7 +2047,6 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			aboutExtensions.addElement("\n-------- " + plugins[p].getPluginName() + " --------");
 			aboutExtensions.addElement(aboutPlugin);
 		}
-		//	TODO overwrite this method in PDF extractor to credit IcePDF, Tesseract, and ImageMagick
 		JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), (ABOUT_TEXT + (aboutExtensions.isEmpty() ? "" : ("\n" + aboutExtensions.concatStrings("\n")))), "About GoldenGATE Document Editor", JOptionPane.INFORMATION_MESSAGE, new ImageIcon(getGoldenGateIcon()));
 	}
 	

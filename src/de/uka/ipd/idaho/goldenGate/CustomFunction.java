@@ -49,9 +49,6 @@ import de.uka.ipd.idaho.goldenGate.plugins.ResourceManager;
 public class CustomFunction {
 	
 	/* TODO
-	 * - add getter for help text
-	 *   - leave it to manager implementation where to get that text from
-	 * - display that in help menu instead of current help in non-master configurations
 	 * - also facilitate adding a markup manual to configurations
 	 *   - allow adding custom files to export descriptions
 	 *   - store in configurations as data items
