@@ -89,9 +89,18 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		nameCollector.addElementIgnoreDuplicates(name + "@" + this.getClass().getName());
 		
 		Settings settings = this.loadSettingsResource(name);
-		ResourceManager rm = this.parent.getResourceProvider(settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE));
-		if (rm != null)
-			nameCollector.addContentIgnoreDuplicates(rm.getDataNamesForResource(settings.getSetting(PROCESSOR_NAME_ATTRIBUTE)));
+		String processorName = settings.getSetting(PROCESSOR_NAME_ATTRIBUTE);
+		if (processorName != null) {
+			String processorProviderClassName = settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE);
+			if (processorName.indexOf('@') != -1) {
+				if (processorProviderClassName == null)
+					processorProviderClassName = processorName.substring(processorName.indexOf('@') + 1);
+				processorName = processorName.substring(0, processorName.indexOf('@'));
+			}
+			ResourceManager rm = this.parent.getResourceProvider(processorProviderClassName);
+			if (rm != null)
+				nameCollector.addContentIgnoreDuplicates(rm.getDataNamesForResource(processorName));
+		}
 		
 		return nameCollector.toStringArray();
 	}
@@ -103,8 +112,15 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		Settings settings = this.loadSettingsResource(name);
 		
 		String processorName = settings.getSetting(PROCESSOR_NAME_ATTRIBUTE);
-		if (processorName != null)
-			nameCollector.addElement(processorName + "@" + settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE));
+		if (processorName != null) {
+			String processorProviderClassName = settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE);
+			if (processorName.indexOf('@') != -1) {
+				if (processorProviderClassName == null)
+					processorProviderClassName = processorName.substring(processorName.indexOf('@') + 1);
+				processorName = processorName.substring(0, processorName.indexOf('@'));
+			}
+			nameCollector.addElement(processorName + "@" + processorProviderClassName);
+		}
 		
 		int nameIndex = 0;
 		while (recourse && (nameIndex < nameCollector.size())) {
@@ -310,17 +326,16 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		try {
 			String annotationType = settings.getSetting(ANNOTATION_TYPE_ATTRIBUTE, "");
 			
-			String processorProviderClassName = settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE);
 			String processorName = settings.getSetting(PROCESSOR_NAME_ATTRIBUTE);
+			String processorProviderClassName = settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE);
+			if ((processorName != null) && (processorName.indexOf('@') != -1)) {
+				if (processorProviderClassName == null)
+					processorProviderClassName = processorName.substring(processorName.indexOf('@') + 1);
+				processorName = processorName.substring(0, processorName.indexOf('@'));
+			}
 			
 			DocumentProcessorManager dpm = this.parent.getDocumentProcessorProvider(processorProviderClassName);
 			return new CustomShortcut(annotationType, dpm, processorName);
-//			
-//			DocumentProcessor dp = null;
-//			DocumentProcessorManager dpm = this.parent.getDocumentProcessorProvider(processorProviderClassName);
-//			if (dpm != null) dp = dpm.getDocumentProcessor(processorName);
-//			
-//			return new CustomShortcut(annotationType, dp);
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -616,12 +631,6 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		}
 		
 		private void updateLabels() {
-//			if (this.processor != null) {
-//				DocumentProcessorManager dpm = parent.getDocumentProcessorProvider(this.processor.getProviderClassName());
-//				if (dpm != null)
-//					this.processorTypeLabel = dpm.getResourceTypeLabel();
-//				this.processorLabel.setText(this.processorTypeLabel + " '" + this.processor.getName() + "' (double click to edit)");
-//			}
 			if ((this.processorName != null) && (this.processorProvider != null)) {
 				this.processorTypeLabel = this.processorProvider.getResourceTypeLabel();
 				this.processorLabel.setText(this.processorTypeLabel + " '" + this.processorName + "' (double click to edit)");
@@ -630,7 +639,6 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		}
 		
 		private void clearProcessor() {
-//			this.processor = null;
 			this.processorName = null;
 			this.processorProvider = null;
 			this.updateLabels();
@@ -652,12 +660,6 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 					this.updateLabels();
 					this.dirty = true;
 				}
-//				DocumentProcessor dp = dpm.getDocumentProcessor(rd.getSelectedResourceName());
-//				if (dp != null) {
-//					this.processor = dp;
-//					this.updateLabels();
-//					this.dirty = true;
-//				}
 			}
 		}
 		
@@ -673,12 +675,6 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 					this.updateLabels();
 					this.dirty = true;
 				}
-//				DocumentProcessor dp = dpm.getDocumentProcessor(dpName);
-//				if (dp != null) {
-//					this.processor = dp;
-//					this.updateLabels();
-//					this.dirty = true;
-//				}
 			}
 		}
 		
@@ -688,19 +684,16 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			String annotationType = this.annotationType.getText();
 			if (annotationType.trim().length() == 0) {
 				annotationType = JOptionPane.showInputDialog(this, "Please enter the type of Annotation to create by this custom shortcut,\nor leave the type empty, so the DocumentProcessor will be applied to the entire document.", "Enter Annotation Type", JOptionPane.QUESTION_MESSAGE);
-				if (annotationType == null) annotationType = "";
+				if (annotationType == null)
+					annotationType = "";
 			}
 			if (annotationType.trim().length() != 0)
 				set.setSetting(ANNOTATION_TYPE_ATTRIBUTE, annotationType);
-//			
-//			if (this.processor != null) {
-//				set.setSetting(PROCESSOR_NAME_ATTRIBUTE, this.processor.getName());
-//				set.setSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE, this.processor.getProviderClassName());
-//			}
 			
 			if ((this.processorName != null) && (this.processorProvider != null)) {
-				set.setSetting(PROCESSOR_NAME_ATTRIBUTE, this.processorName);
-				set.setSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE, this.processorProvider.getClass().getName());
+				set.setSetting(PROCESSOR_NAME_ATTRIBUTE, (this.processorName + "@" + this.processorProvider.getClass().getName()));
+//				set.setSetting(PROCESSOR_NAME_ATTRIBUTE, this.processorName);
+//				set.setSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE, this.processorProvider.getClass().getName());
 			}
 			
 			return set;

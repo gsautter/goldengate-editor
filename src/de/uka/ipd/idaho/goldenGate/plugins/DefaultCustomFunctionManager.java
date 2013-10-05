@@ -125,9 +125,17 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		nameCollector.addElementIgnoreDuplicates(name + "@" + this.getClass().getName());
 		
 		Settings settings = this.loadSettingsResource(name);
-		ResourceManager rm = this.parent.getResourceProvider(settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE));
+		String processorName = settings.getSetting(PROCESSOR_NAME_ATTRIBUTE);
+		String processorProviderClassName = settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE);
+		if (processorName.indexOf('@') != -1) {
+			if (processorProviderClassName == null)
+				processorProviderClassName = processorName.substring(processorName.indexOf('@') + 1);
+			processorName = processorName.substring(0, processorName.indexOf('@'));
+		}
+		
+		ResourceManager rm = this.parent.getResourceProvider(processorProviderClassName);
 		if (rm != null)
-			nameCollector.addContentIgnoreDuplicates(rm.getDataNamesForResource(settings.getSetting(PROCESSOR_NAME_ATTRIBUTE)));
+			nameCollector.addContentIgnoreDuplicates(rm.getDataNamesForResource(processorName));
 		
 		return nameCollector.toStringArray();
 	}
@@ -139,8 +147,15 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		Settings settings = this.loadSettingsResource(name);
 		
 		String processorName = settings.getSetting(PROCESSOR_NAME_ATTRIBUTE);
-		if (processorName != null)
-			nameCollector.addElement(processorName + "@" + settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE));
+		if (processorName != null) {
+			String processorProviderClassName = settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE);
+			if (processorName.indexOf('@') != -1) {
+				if (processorProviderClassName == null)
+					processorProviderClassName = processorName.substring(processorName.indexOf('@') + 1);
+				processorName = processorName.substring(0, processorName.indexOf('@'));
+			}
+			nameCollector.addElement(processorName + "@" + processorProviderClassName);
+		}
 		
 		int nameIndex = 0;
 		while (recourse && (nameIndex < nameCollector.size())) {
@@ -354,8 +369,13 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			String label = settings.getSetting(LABEL_ATTRIBUTE, "");
 			String toolTip = settings.getSetting(TOOLTIP_ATTRIBUTE, "");
 			
-			String processorProviderClassName = settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE);
 			String processorName = settings.getSetting(PROCESSOR_NAME_ATTRIBUTE);
+			String processorProviderClassName = settings.getSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE);
+			if (processorName.indexOf('@') != -1) {
+				if (processorProviderClassName == null)
+					processorProviderClassName = processorName.substring(processorName.indexOf('@') + 1);
+				processorName = processorName.substring(0, processorName.indexOf('@'));
+			}
 			
 			String location = settings.getSetting(LOCATION_ATTRIBUTE, PANEL_LOCATION); // use panel-only as default
 			
@@ -666,18 +686,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				this.dirty = true;
 			}
 		}
-//		private void editFilters() {
-//			FilterEditorDialog fed = new FilterEditorDialog(this.name, this.filters);
-//			fed.setVisible(true);
-//			if (fed.isCommitted()) {
-//				String[] filters = fed.getFilters();
-//				if (filters != null)
-//					this.filters = filters;
-//				this.editFilters.setText("GPath Filters (" + this.filters.length + ")");
-//				this.dirty = true;
-//			}
-//		}
-//		
+		
 		private void selectProcessor(String providerClassName) {
 			DocumentProcessorManager dpm = parent.getDocumentProcessorProvider(providerClassName);
 			if (dpm != null) {
@@ -744,8 +753,9 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				set.setSetting(TOOLTIP_ATTRIBUTE, toolTip);
 			
 			if ((this.processorName != null) && (this.processorProvider != null)) {
-				set.setSetting(PROCESSOR_NAME_ATTRIBUTE, this.processorName);
-				set.setSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE, this.processorProvider.getClass().getName());
+				set.setSetting(PROCESSOR_NAME_ATTRIBUTE, (this.processorName + "@" + this.processorProvider.getClass().getName()));
+//				set.setSetting(PROCESSOR_NAME_ATTRIBUTE, (this.processorName);
+//				set.setSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE, this.processorProvider.getClass().getName());
 			}
 			
 			set.setSetting(LOCATION_ATTRIBUTE, this.location.getSelectedItem().toString());
