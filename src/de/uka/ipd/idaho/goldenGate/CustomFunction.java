@@ -48,6 +48,15 @@ import de.uka.ipd.idaho.goldenGate.plugins.ResourceManager;
  */
 public class CustomFunction {
 	
+	/* TODO
+	 * - add getter for help text
+	 *   - leave it to manager implementation where to get that text from
+	 * - display that in help menu instead of current help in non-master configurations
+	 * - also facilitate adding a markup manual to configurations
+	 *   - allow adding custom files to export descriptions
+	 *   - store in configurations as data items
+	 */
+	
 	/** the label to show on the function button and in the context menu */
 	public final String label;
 	
@@ -177,6 +186,22 @@ public class CustomFunction {
 	}
 	
 	/**
+	 * Retrieve a help text explaining what the custom function does in more
+	 * detail than possible in a tooltip text. If GoldenGATE Document Editor is
+	 * started with a non-master configuration, explanation text becomes part
+	 * of the help, using the custom function label as the title. The returned
+	 * string may be plain text or HTML; in the latter case, it has to start
+	 * with '&lt;html&gt;' to indicate so. This default implementation returns
+	 * null, providing no help text. Implementations of the <code>Manager</code>
+	 * interface are welcome to provide an implementation with more meaningful
+	 * return values.
+	 * @return the help text
+	 */
+	public String getHelpText() {
+		return null;
+	}
+	
+	/**
 	 * Check if the custom function in is applicable to a document. If usePanel
 	 * is false, this method returns false. Otherwise, this method returns true
 	 * if the argument document matches none of the GPath expressions handed to
@@ -195,7 +220,7 @@ public class CustomFunction {
 	 * method returns '&lt;customFunctionName&gt; is not applicable to whole
 	 * documents'. Otherwise, this method checks the preclusion GPath
 	 * expressions one by one and returns the first error reported, or null, if
-	 * none of the preclusins reports an error.
+	 * none of the preclusions reports an error.
 	 * @param doc the document to test
 	 * @return a message describing the reason this custom function is not
 	 *         applicable, or null to indicate it is applicable

@@ -35,23 +35,17 @@ import de.uka.ipd.idaho.goldenGate.plugins.ResourceManager;
 
 /**
  * A CustomShortcut adds a custom key combination to the AnnotationEditor, to be
- * invoced when a piece of text is selectd. The custom shortcut will annotate
+ * invoked when a piece of text is selected. The custom shortcut will annotate
  * this text with the configured type, and apply a DocumentProcessor to the
  * newly created annotation (if a DocumentProcessor is specified).
  * 
  * @author sautter
  */
-/**
- * @author sautter
- *
- */
 public class CustomShortcut {
 	
 	/** the type of annotation to create */
 	public final String annotationType;
-//	
-//	/** the DocumentProcessor to apply to the newly created annotation */
-//	public final DocumentProcessor processor;
+	
 	private final DocumentProcessorManager processorProvider;
 	private final String processorName;
 	
@@ -94,14 +88,21 @@ public class CustomShortcut {
 		return this.processorName;
 	}
 	
-//	/**	Constructor
-//	 * @param	annotationType		the type of the Annotation to create
-//	 * @param	processor			the DocumentProcessor to apply to the newly created Annotation
-//	 */
-//	public CustomShortcut(String annotationType, DocumentProcessor processor) {
-//		this.annotationType = ((annotationType == null) ? "" : annotationType.trim());
-//		this.processor = processor;
-//	}
+	/**
+	 * Retrieve a help text explaining what the custom shortcut does in more
+	 * detail than possible in a tooltip text. If GoldenGATE Document Editor is
+	 * started with a non-master configuration, explanation text becomes part
+	 * of the help, using the custom shortcut key combination as the title. The
+	 * returned string may be plain text or HTML; in the latter case, it has to
+	 * start with '&lt;html&gt;' to indicate so. This default implementation
+	 * returns null, providing no help text. Implementations of the
+	 * <code>Manager</code> interface are welcome to provide an implementation
+	 * with more meaningful return values.
+	 * @return the help text
+	 */
+	public String getHelpText() {
+		return null;
+	}
 	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
@@ -109,8 +110,6 @@ public class CustomShortcut {
 	public String toString() {
 		StringBuffer sb = new StringBuffer("customShortcut[");
 		sb.append(";" + this.annotationType);
-//		sb.append(";" + this.processor.getName());
-//		sb.append(";" + this.processor.getProviderClassName());
 		sb.append(";" + this.processorName);
 		sb.append("@" + this.processorProvider.getClass().getName());
 		sb.append("]");
@@ -137,7 +136,7 @@ public class CustomShortcut {
 	public static interface Manager extends ResourceManager {
 		
 		/**	retrieve a CustomShortcut by its name (Control and Alt keys will be indicated by "Control-" and "Alt-" prefixes to the custom shortcut's key character)
-		 * @param	name	the name of the reqired CustomShortcut
+		 * @param	name	the name of the required CustomShortcut
 		 * @return the CustomShortcut with the required name, or null, if there is no such CustomShortcut
 		 */
 		public abstract CustomShortcut getCustomShortcut(String name);

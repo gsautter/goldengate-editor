@@ -398,14 +398,6 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		}
 		
 		public void writeXml(BufferedWriter bw) throws IOException {
-			
-//			bw.write("<" + configuration_NODE_TYPE + 
-//					" " + name_ATTRIBUTE + "=\"" + configurationGrammar.escape(this.name) + "\"" +
-//					" " + basePath_ATTRIBUTE + "=\"" + configurationGrammar.escape(this.basePath) + "\"" +
-//					" " + timestamp_ATTRIBUTE + "=\"" + this.configTimestamp + "\"" +
-//					" " + isEditable_ATTRIBUTE + "=\"false\"" +
-//					" " + isMasterConfiguration_ATTRIBUTE + "=\"false\"" +
-//					">");
 			bw.write("<" + configuration_NODE_TYPE + 
 					" " + name_ATTRIBUTE + "=\"" + configurationGrammar.escape(this.name) + "\"" +
 					" " + basePath_ATTRIBUTE + "=\"" + configurationGrammar.escape(this.basePath) + "\"" +
@@ -414,6 +406,8 @@ public class ConfigurationUtils implements GoldenGateConstants {
 					" " + isMasterConfiguration_ATTRIBUTE + "=\"false\"");
 			String[] ans = this.getAttributeNames();
 			for (int a = 0; a < ans.length; a++) {
+				if (name_ATTRIBUTE.equals(ans[a]) || basePath_ATTRIBUTE.equals(ans[a]) || timestamp_ATTRIBUTE.equals(ans[a]) || isEditable_ATTRIBUTE.equals(ans[a]) || isMasterConfiguration_ATTRIBUTE.equals(ans[a]))
+					continue;
 				if (!ans[a].matches("[a-zA-Z][a-zA-Z0-9\\-\\_]*+"))
 					continue;
 				String value = this.getAttribute(ans[a]);
@@ -728,7 +722,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	
 	
 	/**
-	 * Descriptor for a libraray (jar file) required by a plugin
+	 * Descriptor for a library (jar file) required by a plugin
 	 * 
 	 * @author sautter
 	 */
@@ -961,7 +955,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	 * configuration name is null or the specified list of configuration
 	 * descriptors does not contain a descriptor with the specified name, this
 	 * method returns null.
-	 * @param configurations the cofiguration desctiptors to choose from
+	 * @param configurations the configuration descriptors to choose from
 	 * @param configName the name of the configuration to obtain a descriptor
 	 *            for
 	 * @param dataBasePath the base path of the local GoldenGATE installation
@@ -980,7 +974,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	 * configuration name is null or the specified list of configuration
 	 * descriptors does not contain a descriptor with the specified name, this
 	 * method returns null.
-	 * @param configurations the cofiguration desctiptors to choose from
+	 * @param configurations the configuration descriptors to choose from
 	 * @param configName the name of the configuration to obtain a descriptor
 	 *            for
 	 * @param dataBasePath the base path of the local GoldenGATE installation
@@ -1082,7 +1076,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	
 	/**
 	 * The tolerance (in milliseconds) within which two configuration timestamps
-	 * are considered equal. This fuzzieness is necessary to alleviate gaps
+	 * are considered equal. This fuzziness is necessary to alleviate gaps
 	 * between exports of the same configuration to different locations, and
 	 * system time differences between configuration hosts and client computers.
 	 * The value is equal to 10 minutes, which alleviates rather vast time
@@ -1095,7 +1089,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	/**
 	 * Compare two configurations. this method returns true if the timestamp of
 	 * the first configuration is more recent than that of the second one by at
-	 * least the configiuration timestamp comparison fuzzieness. The equality
+	 * least the configuration timestamp comparison fuzziness. The equality
 	 * relation established by this method through comparing two configurations
 	 * both ways, returning false each way, is not necessarily transitive. Thus,
 	 * this method should not be used for ordering.
@@ -1189,8 +1183,6 @@ public class ConfigurationUtils implements GoldenGateConstants {
 					}
 					catch (NullPointerException npe) {
 						System.out.println("   - missing ZIP entry: " + fileName);
-//						if (!fileName.toLowerCase().endsWith(".cnfg"))
-//							throw npe;
 					}
 				}
 				
@@ -1716,7 +1708,6 @@ public class ConfigurationUtils implements GoldenGateConstants {
 			JLabel resourceLabel = new JLabel();
 			
 			PluginPanel(String pluginName, String pluginClassName, String[] resourceNames, StringVector selected) {
-//				super(new GridLayout(1, 3), true);
 				super(new BorderLayout(), true);
 				this.pluginName = pluginName;
 				this.pluginClassName = pluginClassName;
@@ -1860,46 +1851,6 @@ public class ConfigurationUtils implements GoldenGateConstants {
 			}
 		}
 	}
-	
-//	/**
-//	 * Interface to implement by components that want to monitor the progress of
-//	 * configuration manipulations.
-//	 * 
-//	 * @author sautter
-//	 */
-//	public static interface StatusMonitor {
-//		
-//		/**
-//		 * Set the major export step
-//		 * @param step the name of the step
-//		 */
-//		public void setExportStep(String step);
-//		
-//		/**
-//		 * Set the label naming the current activity
-//		 * @param label the label naming the current activity
-//		 */
-//		public void setLabel(String label);
-//		
-//		/**
-//		 * Set the minimum boundary for progress display
-//		 * @param baseProgress the minimum boundary for progress display
-//		 */
-//		public void setBaseProgress(int baseProgress);
-//		
-//		/**
-//		 * Set the maximum boundary for progress display
-//		 * @param maxProgress the maximum boundary for progress display
-//		 */
-//		public void setMaxProgress(int maxProgress);
-//		
-//		/**
-//		 * Set the progress, relative between the currently set base and max
-//		 * progress
-//		 * @param progress the progress
-//		 */
-//		public void setProgress(int progress);
-//	}
 	
 	/**
 	 * Create a (duplicate-free) list of the data items that belong to a given
@@ -2183,16 +2134,12 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	
 	private static void addPlugin(Configuration config, String basePath, GoldenGatePlugin ggPlugin, HashSet pluginClassNames, Properties jarPathsByClassNames, Properties dataPathsByClassNames, StringVector toExport, long ggTimestamp) throws IOException {
 		System.out.println("Writing plugin '" + ggPlugin.getPluginName() + "'");
-//		System.out.println("  - base path is '" + basePath + "'");
 		String pluginClassPath = jarPathsByClassNames.getProperty(ggPlugin.getClass().getName());
-//		System.out.println("  - class path is '" + pluginClassPath + "'");
 		String pluginDataPath = dataPathsByClassNames.getProperty(ggPlugin.getClass().getName());
-//		System.out.println("  - data path is '" + pluginDataPath + "'");
 		
 		String pluginLibPath = dataPathsByClassNames.getProperty(ggPlugin.getClass().getName());
 		if (pluginClassPath != null)
 			pluginLibPath = pluginLibPath.substring(0, (pluginLibPath.length() - JAR_DATA_FOLDER_SUFFIX.length())) + JAR_BIN_FOLDER_SUFFIX;
-//		System.out.println("  - lib path is '" + pluginLibPath + "'");
 		
 		Plugin plugin = new Plugin(
 				ggPlugin.getPluginName(),
@@ -2215,7 +2162,6 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		StringVector dataNames = getNonResourceDataNames(new File(basePath), ggPlugin, dataPathsByClassNames);
 		for (int d = 0; d < dataNames.size(); d++)
 			plugin.dataItems.add(new DataItem(dataNames.get(d).substring(pluginDataPath.length() + 1), (new File(dataNames.get(d))).lastModified()));
-//		System.out.println("Non-Resource data names for " + ggPlugin.getClass().getName() + ":\n  " + dataNames.concatStrings("\n  "));
 		
 		//	get required plugins
 		Class pluginClass = ggPlugin.getClass();
@@ -2341,7 +2287,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		if (resNames.length != 0) {
 			StringVector allResDataNames = new StringVector();
 			
-			//	get dara names for resources
+			//	get data names for resources
 			for (int r = 0; r < resNames.length; r++) {
 				String[] resDataNames = new String[0];
 				
@@ -3263,10 +3209,8 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		while (!gg.isStartupFinished())
 			Thread.sleep(200);
 		StringVector selected = new StringVector();
-//		selected.addElement("TaxonX-Wizard.markupWizard@de.uka.ipd.idaho.goldenGate.markupWizard.MarkupWizardManager");
 		selected.addElement("06.A.SelectTaxonNames.customFunction");
 		selected.addElement("<ZooKeys XML Document Format>");
-//		selected.addElement("06.A.SelectTaxonNames.customFunction");
 		Configuration config = buildConfiguration("Test", new File("E:/GoldenGATEv3"), gg, selected, null);
 		config.writeXml(new BufferedWriter(new OutputStreamWriter(System.out)));
 		String[] dataNames = getDataNameList(new File("E:/GoldenGATEv3"), config);

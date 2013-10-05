@@ -258,7 +258,7 @@ public abstract class XmlConfiguration implements GoldenGateConfiguration  {
 				pluginList.add(this.plugins[p]);
 			}
 			
-			//	use default implementations if no custom inplementations present
+			//	use default implementations if no custom implementations present
 			if (customFunctionManager == null) {
 				Plugin cfm = ((Plugin) this.descriptor.pluginsByClassName.get(DefaultCustomFunctionManager.class.getName()));
 				if (cfm != null) {

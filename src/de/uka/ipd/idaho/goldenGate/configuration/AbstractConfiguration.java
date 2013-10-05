@@ -215,7 +215,7 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 				pluginList.add(this.plugins[p]);
 			}
 			
-			//	use default implementations if no custom inplementations present
+			//	use default implementations if no custom implementations present
 			if (customFunctionManager == null) {
 				customFunctionManager = new DefaultCustomFunctionManager();
 				customFunctionManager.setDataProvider(new PluginDataProviderPrefixBased(this.baseDataProvider, CUSTOM_FUNCTIONS_FOLDER_NAME));
