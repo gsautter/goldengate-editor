@@ -45,10 +45,15 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -101,6 +106,9 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			if (rm != null)
 				nameCollector.addContentIgnoreDuplicates(rm.getDataNamesForResource(processorName));
 		}
+		
+		if (this.dataProvider.isDataAvailable(name + ".help"))
+			nameCollector.addElementIgnoreDuplicates(name + ".help@" + this.getClass().getName());
 		
 		return nameCollector.toStringArray();
 	}
@@ -488,8 +496,9 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		private boolean dirty = false;
 		
 		private JTextField annotationType = new JTextField();
+		private String helpText;
+		private JButton editHelpText = new JButton("Edit Help Text");
 		
-//		private DocumentProcessor processor;
 		private DocumentProcessorManager processorProvider;
 		private String processorName;
 		private JLabel processorLabel = new JLabel("", JLabel.LEFT);
@@ -500,25 +509,9 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			this.name = name;
 			this.add(getExplanationLabel(), BorderLayout.CENTER);
 			
-//			if (customShortcut != null) {
-//				this.annotationType.setText(customShortcut.annotationType);
-////				this.processor = customShortcut.processor;
-//				this.processor = customShortcut.getDocumentProcessor();
-//				if (this.processor != null) {
-//					DocumentProcessorManager dpm = parent.getDocumentProcessorProvider(this.processor.getProviderClassName());
-//					if (dpm != null) this.processorTypeLabel = dpm.getResourceTypeLabel();
-//				}
-//			}
-//			this.processorLabel.addMouseListener(new MouseAdapter() {
-//				public void mouseClicked(MouseEvent me) {
-//					if ((me.getClickCount() > 1) && (processor != null)) {
-//						DocumentProcessorManager dpm = parent.getDocumentProcessorProvider(processor.getProviderClassName());
-//						if (dpm != null) dpm.editDocumentProcessor(processor.getName());
-//					}
-//				}
-//			});
 			if (customShortcut != null) {
 				this.annotationType.setText(customShortcut.annotationType);
+				this.helpText = customShortcut.getHelpText();
 				this.processorName = customShortcut.getDocumentProcessorName();
 				this.processorProvider = customShortcut.getDocumentProcessorProvider();
 				if (this.processorProvider != null)
@@ -540,6 +533,11 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			});
 			
 			this.annotationType.getDocument().addDocumentListener(this);
+			this.editHelpText.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent ae) {
+					editHelpText();
+				}
+			});
 			
 			this.updateLabels();
 			
@@ -560,17 +558,13 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			gbc.weightx = 0;
 			functionPanel.add(new JLabel("Annotation Type", JLabel.LEFT), gbc.clone());
 			gbc.gridx = 1;
-			gbc.gridwidth = 2;
+			gbc.gridwidth = 1;
 			functionPanel.add(this.annotationType, gbc.clone());
+			gbc.gridx = 2;
+			gbc.gridwidth = 1;
+			functionPanel.add(this.editHelpText, gbc.clone());
 			
-//			gbc.gridy ++;
-//			gbc.gridx = 0;
-//			gbc.gridwidth = 3;
-//			gbc.weightx = 3;
-//			gbc.weighty = 5;
-//			functionPanel.add(this.processorLabel, gbc.clone());
 			gbc.gridy ++;
-			
 			gbc.gridx = 0;
 			gbc.weightx = 1;
 			gbc.gridwidth = 2;
@@ -645,6 +639,15 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			this.dirty = true;
 		}
 		
+		private void editHelpText() {
+			HelpEditorDialog hed = new HelpEditorDialog(this.name, this.helpText);
+			hed.setVisible(true);
+			if (hed.isCommitted()) {
+				this.helpText = hed.getHelpText();
+				this.dirty = true;
+			}
+		}
+		
 		private void selectProcessor(String providerClassName) {
 			DocumentProcessorManager dpm = parent.getDocumentProcessorProvider(providerClassName);
 			if (dpm != null) {
@@ -696,7 +699,81 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 //				set.setSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE, this.processorProvider.getClass().getName());
 			}
 			
+			//	TODO figure out when to save this (this method is called for more than just saving)
+			if (this.helpText != null) try {
+				storeStringResource((this.name + ".help"), this.helpText);
+			} catch (IOException ioe) {}
+			
 			return set;
+		}
+	}
+	
+	private class HelpEditorDialog extends DialogPanel {
+		private JTextArea editor = new JTextArea();
+		private JEditorPane preview = new JEditorPane();
+		HelpEditorDialog(String name, String helpText) {
+			super(("Edit Help Text for '" + name + "'"), true);
+			
+			//	initialize main buttons
+			JButton commitButton = new JButton("OK");
+			commitButton.setBorder(BorderFactory.createRaisedBevelBorder());
+			commitButton.setPreferredSize(new Dimension(100, 21));
+			commitButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent ae) {
+					dispose();
+				}
+			});
+			
+			JButton abortButton = new JButton("Cancel");
+			abortButton.setBorder(BorderFactory.createRaisedBevelBorder());
+			abortButton.setPreferredSize(new Dimension(100, 21));
+			abortButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent ae) {
+					HelpEditorDialog.this.editor = null;
+					dispose();
+				}
+			});
+			
+			JPanel mainButtonPanel = new JPanel();
+			mainButtonPanel.setLayout(new FlowLayout());
+			mainButtonPanel.add(commitButton);
+			mainButtonPanel.add(abortButton);
+			
+			//	initialize editors
+			this.editor.setText((helpText == null) ? "" : helpText);
+			
+			//	put editor in tabs
+			final JTabbedPane tabs = new JTabbedPane();
+			tabs.addTab("Editor", this.editor);
+			tabs.addTab("Preview", this.preview);
+			tabs.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent ce) {
+					if (tabs.getSelectedComponent() == preview) {
+						String ht = editor.getText();
+						if ((ht.length() > 6) && ("<html>".equals(ht.substring(0, 6).toLowerCase()) || "<html ".equals(ht.substring(0, 6).toLowerCase())))
+							preview.setContentType("text/html");
+						else preview.setContentType("text/plain");
+						preview.setText(ht);
+					}
+				}
+			});
+			
+			//	put the whole stuff together
+			this.setLayout(new BorderLayout());
+			this.add(tabs, BorderLayout.CENTER);
+			this.add(mainButtonPanel, BorderLayout.SOUTH);
+			
+			this.setResizable(true);
+			this.setSize(new Dimension(600, 400));
+			this.setLocationRelativeTo(this.getOwner());
+		}
+		
+		boolean isCommitted() {
+			return (this.editor != null);
+		}
+		
+		String getHelpText() {
+			return ((this.editor == null) ? null : this.editor.getText().trim());
 		}
 	}
 }

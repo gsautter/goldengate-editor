@@ -2903,7 +2903,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			this.getContentPane().add(mainButtonPanel, BorderLayout.SOUTH);
 			
 			//	set dialog size
-			this.setSize(new Dimension(650, 500));
+			this.setSize(new Dimension(800, 650));
 			this.setResizable(true);
 		}
 	}

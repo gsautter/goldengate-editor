@@ -7091,7 +7091,6 @@ public class AnnotationEditorPanel extends JPanel implements GoldenGateConstants
 				CustomFunction[] customFunctions = this.host.getCustomFunctions();
 				ArrayList cfList = new ArrayList();
 				for (int c = 0; c < customFunctions.length; c++) {
-//					if (customFunctions[c].useContextMenu)
 					if (customFunctions[c].displayFor(annotation))
 						cfList.add(customFunctions[c]);
 				}

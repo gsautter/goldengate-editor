@@ -158,7 +158,6 @@ public abstract class ActiveDocumentFormatProvider extends AbstractDocumentForma
 			super(title, toolTip);
 			this.setLayout(new BorderLayout());
 			this.setDoubleBuffered(true);
-			this.add(getExplanationLabel(), BorderLayout.CENTER);
 			
 			JButton clearDpButton = new JButton("Clear");
 			clearDpButton.setBorder(BorderFactory.createRaisedBevelBorder());
@@ -249,6 +248,9 @@ public abstract class ActiveDocumentFormatProvider extends AbstractDocumentForma
 				functionPanel.add(button, gbc.clone());
 			}
 			
+			JPanel extension = getSettingsPanelExtension();
+			if (extension != null)
+				this.add(extension, BorderLayout.NORTH);
 			this.add(getExplanationLabel(), BorderLayout.CENTER);
 			this.add(functionPanel, BorderLayout.SOUTH);
 		}
@@ -318,5 +320,17 @@ public abstract class ActiveDocumentFormatProvider extends AbstractDocumentForma
 				}
 			}
 		}
+	}
+	
+	/**
+	 * Obtain an extension for the document format provider's settings panel,
+	 * containing sub class specific controls. If this method returns a
+	 * non-null result, the panel appears at the top of the settings panel.
+	 * This default implementation returns null, sub classes are welcome to
+	 * overwrite it as needed.
+	 * @return a panel with sub class specific controls
+	 */
+	protected JPanel getSettingsPanelExtension() {
+		return null;
 	}
 }

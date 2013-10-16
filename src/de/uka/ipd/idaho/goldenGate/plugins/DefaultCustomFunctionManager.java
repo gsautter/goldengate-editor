@@ -58,14 +58,18 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -132,6 +136,9 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				processorProviderClassName = processorName.substring(processorName.indexOf('@') + 1);
 			processorName = processorName.substring(0, processorName.indexOf('@'));
 		}
+		
+		if (this.dataProvider.isDataAvailable(name + ".help"))
+			nameCollector.addElementIgnoreDuplicates(name + ".help@" + this.getClass().getName());
 		
 		ResourceManager rm = this.parent.getResourceProvider(processorProviderClassName);
 		if (rm != null)
@@ -302,13 +309,14 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		}
 		
 		private boolean createCustomFunction(Settings modelCustomFunction, String name) {
-			CreateCustomFunctionDialog cpd = new CreateCustomFunctionDialog(name, getCustomFunction(modelCustomFunction));
-			cpd.setVisible(true);
+			CreateCustomFunctionDialog ccfd = new CreateCustomFunctionDialog(name, getCustomFunction(modelCustomFunction));
+			ccfd.setVisible(true);
 			
-			if (cpd.isCommitted()) {
-				Settings customFunction = cpd.getCustomFunction();
-				String customFunctionName = cpd.getCustomFunctionName();
-				if (!customFunctionName.endsWith(FILE_EXTENSION)) customFunctionName += FILE_EXTENSION;
+			if (ccfd.isCommitted()) {
+				Settings customFunction = ccfd.getCustomFunction();
+				String customFunctionName = ccfd.getCustomFunctionName();
+				if (!customFunctionName.endsWith(FILE_EXTENSION))
+					customFunctionName += FILE_EXTENSION;
 				try {
 					if (storeSettingsResource(customFunctionName, customFunction)) {
 						parent.notifyResourcesChanged(this.getClass().getName());
@@ -352,8 +360,8 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		}
 	}
 	
-	/**	retrieve a customFunction by its name
-	 * @param	name	the name of the reqired customFunction
+	/**	retrieve a custom function by its name
+	 * @param	name	the name of the required customFunction
 	 * @return the customFunction with the required name, or null, if there is no such customFunction
 	 */
 	public CustomFunction getCustomFunction(String name) {
@@ -487,14 +495,17 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		private String name;
 		
 		private boolean dirty = false;
+		private boolean helpTextDirty = false;
 		
 		private JTextField label = new JTextField();
 		private JTextField toolTip = new JTextField();
+		private String helpText;
+		private JButton editHelpText = new JButton("Edit Help Text");
+		
 		private JComboBox location = new JComboBox(LOCATIONS);
 		
 		private LinkedHashMap preclusions = new LinkedHashMap();
 		private String[] filters = new String[0];
-//		private JButton editFilters = new JButton("GPath Filters");
 		private JButton editPreclusionsAndFilters = new JButton("Preclusions (0) & Filters (0)");
 		
 		private DocumentProcessorManager processorProvider;
@@ -509,20 +520,6 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			
 			this.location.setEditable(false);
 			this.location.setSelectedItem(PANEL_LOCATION);
-//			this.location.addItemListener(new ItemListener() {
-//				public void itemStateChanged(ItemEvent ie) {
-//					String l = ((String) location.getSelectedItem());
-//					editFilters.setEnabled(l.indexOf(CONTEXT_MENU_LOCATION) != -1);
-//				}
-//			});
-			
-//			this.editFilters.setBorder(BorderFactory.createRaisedBevelBorder());
-//			this.editFilters.setEnabled(false);
-//			this.editFilters.addActionListener(new ActionListener() {
-//				public void actionPerformed(ActionEvent ae) {
-//					editFilters();
-//				}
-//			});
 			this.editPreclusionsAndFilters.setBorder(BorderFactory.createRaisedBevelBorder());
 			this.editPreclusionsAndFilters.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent ae) {
@@ -533,6 +530,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			if (customFunction != null) {
 				this.label.setText(customFunction.label);
 				this.toolTip.setText(customFunction.toolTip);
+				this.helpText = customFunction.getHelpText();
 				this.processorName = customFunction.getDocumentProcessorName();
 				this.processorProvider = customFunction.getDocumentProcessorProvider();
 				if (this.processorProvider != null)
@@ -544,7 +542,6 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				String[] filters = customFunction.getContextMenuFilters();
 				if (filters != null)
 					this.filters = filters;
-//				this.editFilters.setText("GPath Filters (" + this.filters.length + ")");
 				this.editPreclusionsAndFilters.setText("Preclusions (" + this.preclusions.size() + ") & Filters (" + this.filters.length + ")");
 			}
 			this.processorLabel.addMouseListener(new MouseAdapter() {
@@ -556,6 +553,12 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			
 			this.label.getDocument().addDocumentListener(this);
 			this.toolTip.getDocument().addDocumentListener(this);
+			this.editHelpText.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent ae) {
+					editHelpText();
+				}
+			});
+			
 			this.location.addItemListener(new ItemListener() {
 				public void itemStateChanged(ItemEvent ie) {
 					dirty = true;
@@ -581,25 +584,34 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			gbc.weightx = 0;
 			functionPanel.add(new JLabel("Custom Function Label", JLabel.LEFT), gbc.clone());
 			gbc.gridx = 1;
-			gbc.gridwidth = 2;
+//			gbc.gridwidth = 2;
+//			functionPanel.add(this.label, gbc.clone());
+			gbc.weightx = 1;
 			functionPanel.add(this.label, gbc.clone());
+			gbc.gridx = 1;
+			gbc.weightx = 0;
+			functionPanel.add(this.editHelpText, gbc.clone());
 			
 			gbc.gridy ++;
 			gbc.gridx = 0;
 			gbc.gridwidth = 1;
+			gbc.weightx = 0;
 			functionPanel.add(new JLabel("Custom Function Tooltip", JLabel.LEFT), gbc.clone());
 			gbc.gridx = 1;
 			gbc.gridwidth = 2;
+			gbc.weightx = 2;
 			functionPanel.add(this.toolTip, gbc.clone());
 			
 			gbc.gridy ++;
 			gbc.gridx = 0;
 			gbc.gridwidth = 1;
+			gbc.weightx = 0;
 			functionPanel.add(new JLabel("Use Custom Function in ...", JLabel.LEFT), gbc.clone());
 			gbc.gridx = 1;
+			gbc.weightx = 1;
 			functionPanel.add(this.location, gbc.clone());
 			gbc.gridx = 2;
-//			functionPanel.add(this.editFilters, gbc.clone());
+			gbc.weightx = 0;
 			functionPanel.add(this.editPreclusionsAndFilters, gbc.clone());
 			
 			gbc.gridy ++;
@@ -659,7 +671,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		}
 		
 		boolean isDirty() {
-			return this.dirty;
+			return (this.dirty || this.helpTextDirty);
 		}
 		
 		private void updateLabels() {
@@ -684,6 +696,15 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 					this.filters = filters;
 				this.editPreclusionsAndFilters.setText("Preclusions (" + this.preclusions.size() + ") & Filters (" + this.filters.length + ")");
 				this.dirty = true;
+			}
+		}
+		
+		private void editHelpText() {
+			HelpEditorDialog hed = new HelpEditorDialog(this.name, this.helpText);
+			hed.setVisible(true);
+			if (hed.isCommitted()) {
+				this.helpText = hed.getHelpText();
+				this.helpTextDirty = true;
 			}
 		}
 		
@@ -771,66 +792,14 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			for (int f = 0; f < this.filters.length; f++)
 				set.setSetting((FILTER_ATTRIBUTE + f), this.filters[f]);
 			
+			if (this.helpTextDirty && (this.helpText != null)) try {
+				storeStringResource((this.name + ".help"), this.helpText);
+			} catch (IOException ioe) {}
+			
 			return set;
 		}
 	}
 	
-//	private class FilterEditorDialog extends DialogPanel {
-//		
-//		private FilterEditorPanel editor;
-//		private String[] filters = null;
-//		
-//		FilterEditorDialog(String name, String[] filters) {
-//			super(("Edit Filters for Custom Function '" + name + "'"), true);
-//			
-//			//	initialize main buttons
-//			JButton commitButton = new JButton("OK");
-//			commitButton.setBorder(BorderFactory.createRaisedBevelBorder());
-//			commitButton.setPreferredSize(new Dimension(100, 21));
-//			commitButton.addActionListener(new ActionListener() {
-//				public void actionPerformed(ActionEvent e) {
-//					FilterEditorDialog.this.filters = editor.getFilters();
-//					dispose();
-//				}
-//			});
-//			
-//			JButton abortButton = new JButton("Cancel");
-//			abortButton.setBorder(BorderFactory.createRaisedBevelBorder());
-//			abortButton.setPreferredSize(new Dimension(100, 21));
-//			abortButton.addActionListener(new ActionListener() {
-//				public void actionPerformed(ActionEvent e) {
-//					FilterEditorDialog.this.filters = null;
-//					dispose();
-//				}
-//			});
-//			
-//			JPanel mainButtonPanel = new JPanel();
-//			mainButtonPanel.setLayout(new FlowLayout());
-//			mainButtonPanel.add(commitButton);
-//			mainButtonPanel.add(abortButton);
-//			
-//			//	initialize editor
-//			this.editor = new FilterEditorPanel(filters);
-//			
-//			//	put the whole stuff together
-//			this.setLayout(new BorderLayout());
-//			this.add(this.editor, BorderLayout.CENTER);
-//			this.add(mainButtonPanel, BorderLayout.SOUTH);
-//			
-//			this.setResizable(true);
-//			this.setSize(new Dimension(600, 400));
-//			this.setLocationRelativeTo(this.getOwner());
-//		}
-//		
-//		boolean isCommitted() {
-//			return (this.filters != null);
-//		}
-//		
-//		String[] getFilters() {
-//			return this.filters;
-//		}
-//	}
-//	
 	private class PreclusionFilterEditorDialog extends DialogPanel {
 		
 		private PreclusionEditorPanel preclusionEditor;
@@ -846,7 +815,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			commitButton.setBorder(BorderFactory.createRaisedBevelBorder());
 			commitButton.setPreferredSize(new Dimension(100, 21));
 			commitButton.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
+				public void actionPerformed(ActionEvent ae) {
 					PreclusionFilterEditorDialog.this.preclusions = preclusionEditor.getPreclusions();
 					PreclusionFilterEditorDialog.this.filters = filterEditor.getFilters();
 					dispose();
@@ -857,7 +826,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			abortButton.setBorder(BorderFactory.createRaisedBevelBorder());
 			abortButton.setPreferredSize(new Dimension(100, 21));
 			abortButton.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
+				public void actionPerformed(ActionEvent ae) {
 					PreclusionFilterEditorDialog.this.preclusions = null;
 					PreclusionFilterEditorDialog.this.filters = null;
 					dispose();
@@ -1972,6 +1941,75 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			}
 			
 			return ((String[]) filters.toArray(new String[filters.size()]));
+		}
+	}
+	
+	private class HelpEditorDialog extends DialogPanel {
+		private JTextArea editor = new JTextArea();
+		private JEditorPane preview = new JEditorPane();
+		HelpEditorDialog(String name, String helpText) {
+			super(("Edit Help Text for '" + name + "'"), true);
+			
+			//	initialize main buttons
+			JButton commitButton = new JButton("OK");
+			commitButton.setBorder(BorderFactory.createRaisedBevelBorder());
+			commitButton.setPreferredSize(new Dimension(100, 21));
+			commitButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent ae) {
+					dispose();
+				}
+			});
+			
+			JButton abortButton = new JButton("Cancel");
+			abortButton.setBorder(BorderFactory.createRaisedBevelBorder());
+			abortButton.setPreferredSize(new Dimension(100, 21));
+			abortButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent ae) {
+					HelpEditorDialog.this.editor = null;
+					dispose();
+				}
+			});
+			
+			JPanel mainButtonPanel = new JPanel();
+			mainButtonPanel.setLayout(new FlowLayout());
+			mainButtonPanel.add(commitButton);
+			mainButtonPanel.add(abortButton);
+			
+			//	initialize editors
+			this.editor.setText((helpText == null) ? "" : helpText);
+			
+			//	put editor in tabs
+			final JTabbedPane tabs = new JTabbedPane();
+			tabs.addTab("Editor", this.editor);
+			tabs.addTab("Preview", this.preview);
+			tabs.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent ce) {
+					if (tabs.getSelectedComponent() == preview) {
+						String ht = editor.getText();
+						if ((ht.length() > 6) && ("<html>".equals(ht.substring(0, 6).toLowerCase()) || "<html ".equals(ht.substring(0, 6).toLowerCase())))
+							preview.setContentType("text/html");
+						else preview.setContentType("text/plain");
+						preview.setText(ht);
+					}
+				}
+			});
+			
+			//	put the whole stuff together
+			this.setLayout(new BorderLayout());
+			this.add(tabs, BorderLayout.CENTER);
+			this.add(mainButtonPanel, BorderLayout.SOUTH);
+			
+			this.setResizable(true);
+			this.setSize(new Dimension(600, 400));
+			this.setLocationRelativeTo(this.getOwner());
+		}
+		
+		boolean isCommitted() {
+			return (this.editor != null);
+		}
+		
+		String getHelpText() {
+			return ((this.editor == null) ? null : this.editor.getText().trim());
 		}
 	}
 }
