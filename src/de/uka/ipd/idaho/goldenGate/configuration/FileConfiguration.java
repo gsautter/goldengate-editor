@@ -37,6 +37,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
@@ -506,6 +508,17 @@ public class FileConfiguration extends AbstractConfiguration {
 					super.print(x);
 					super.println();
 					errPrint(String.valueOf(x), true);
+				}
+			});
+			
+			this.addWindowListener(new WindowAdapter() {
+				public void windowOpened(WindowEvent we) {
+					active = activeSwitch.isSelected();
+				}
+				public void windowClosed(WindowEvent we) {
+					active = false;
+					systemOutDisplay.setText("");
+					systemErrDisplay.setText("");
 				}
 			});
 		}
