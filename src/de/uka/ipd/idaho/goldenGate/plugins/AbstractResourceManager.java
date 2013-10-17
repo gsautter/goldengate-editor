@@ -29,13 +29,12 @@ package de.uka.ipd.idaho.goldenGate.plugins;
 
 
 import java.awt.Dimension;
-import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
 
 import javax.swing.JEditorPane;
@@ -196,10 +195,15 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 	protected String loadStringResource(String resourceName) {
 		try {
 			StringWriter sw = new StringWriter();
-			InputStream is = new BufferedInputStream(this.dataProvider.getInputStream(resourceName));
-			int i;
-			while ((i = is.read()) != -1) sw.write(i);
-			is.close();
+			BufferedReader br = new BufferedReader(new InputStreamReader(this.dataProvider.getInputStream(resourceName), "UTF-8"));
+			for (int c; (c = br.read()) != -1;)
+				sw.write((char) c);
+			br.close();
+//			InputStream is = new BufferedInputStream(this.dataProvider.getInputStream(resourceName));
+//			int i;
+//			while ((i = is.read()) != -1)
+//				sw.write(i);
+//			is.close();
 			return sw.toString();
 		}
 		catch (IOException ioe) {
@@ -214,21 +218,27 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 	 * @param resourceName the name to store the specified resource with
 	 * @param resource the resource to store
 	 * @return true if the specified resource was store, false otherwise
-	 * @throws IOException if any occours in the course of storing the resource
+	 * @throws IOException if any occurs in the course of storing the resource
 	 */
 	protected boolean storeStringResource(String resourceName, String resource) throws IOException {
 		if (this.dataProvider.isDataEditable(resourceName)) {
-			StringVector lines = new StringVector();
-			lines.parseAndAddElements(resource, "\n");
-			
-			BufferedWriter out = new BufferedWriter(new OutputStreamWriter(this.dataProvider.getOutputStream(resourceName)));
-			
-			for (int l = 0; l < lines.size(); l++) {
-				out.write(lines.get(l));
-				out.newLine();
-			}
-			out.flush();
-			out.close();
+			StringReader sr = new StringReader(resource);
+			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.dataProvider.getOutputStream(resourceName), "UTF-8"));
+			for (int c; (c = sr.read()) != -1;)
+				bw.write((char) c);
+			bw.flush();
+			bw.close();
+//			StringVector lines = new StringVector();
+//			lines.parseAndAddElements(resource, "\n");
+//			
+//			BufferedWriter out = new BufferedWriter(new OutputStreamWriter(this.dataProvider.getOutputStream(resourceName)));
+//			
+//			for (int l = 0; l < lines.size(); l++) {
+//				out.write(lines.get(l));
+//				out.newLine();
+//			}
+//			out.flush();
+//			out.close();
 			this.parent.notifyResourcesChanged(this.getClass().getName());
 			return true;
 		}
@@ -242,9 +252,12 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 	 */
 	protected StringVector loadListResource(String resourceName) {
 		try {
-			InputStreamReader reader = new InputStreamReader(this.dataProvider.getInputStream(resourceName));
-			StringVector resource = StringVector.loadList(reader);
-			reader.close();
+			BufferedReader br = new BufferedReader(new InputStreamReader(this.dataProvider.getInputStream(resourceName), "UTF-8"));
+			StringVector resource = StringVector.loadList(br);
+			br.close();
+//			InputStreamReader reader = new InputStreamReader(this.dataProvider.getInputStream(resourceName));
+//			StringVector resource = StringVector.loadList(reader);
+//			reader.close();
 			return resource;
 		}
 		catch (IOException e) {
@@ -259,14 +272,18 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 	 * @param resourceName the name to store the specified resource with
 	 * @param resource the resource to store
 	 * @return true if the specified resource was store, false otherwise
-	 * @throws IOException if any occours in the course of storing the resource
+	 * @throws IOException if any occurs in the course of storing the resource
 	 */
 	protected boolean storeListResource(String resourceName, StringVector resource) throws IOException {
 		if (this.dataProvider.isDataEditable(resourceName)) {
-			OutputStream os = this.dataProvider.getOutputStream(resourceName);
-			resource.storeContent(os);
-			os.flush();
-			os.close();
+			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.dataProvider.getOutputStream(resourceName), "UTF-8"));
+			resource.storeContent(bw);
+			bw.flush();
+			bw.close();
+//			OutputStream os = this.dataProvider.getOutputStream(resourceName);
+//			resource.storeContent(os);
+//			os.flush();
+//			os.close();
 			this.parent.notifyResourcesChanged(this.getClass().getName());
 			return true;
 		}
@@ -280,9 +297,12 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 	 */
 	protected Settings loadSettingsResource(String resourceName) {
 		try {
-			InputStream is = this.dataProvider.getInputStream(resourceName);
-			Settings set = Settings.loadSettings(is);
-			is.close();
+			BufferedReader br = new BufferedReader(new InputStreamReader(this.dataProvider.getInputStream(resourceName), "UTF-8"));
+			Settings set = Settings.loadSettings(br);
+			br.close();
+//			InputStream is = this.dataProvider.getInputStream(resourceName);
+//			Settings set = Settings.loadSettings(is);
+//			is.close();
 			return set;
 		}
 		catch (IOException e) {
@@ -297,14 +317,18 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 	 * @param resourceName the name to store the specified resource with
 	 * @param resource the resource to store
 	 * @return true if the specified resource was store, false otherwise
-	 * @throws IOException if any occours in the course of storing the resource
+	 * @throws IOException if any occurs in the course of storing the resource
 	 */
 	protected boolean storeSettingsResource(String resourceName, Settings resource) throws IOException {
 		if (this.dataProvider.isDataEditable(resourceName)) {
-			OutputStream os = this.dataProvider.getOutputStream(resourceName);
-			resource.storeAsText(os);
-			os.flush();
-			os.close();
+			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.dataProvider.getOutputStream(resourceName), "UTF-8"));
+			resource.storeAsText(bw);
+			bw.flush();
+			bw.close();
+//			OutputStream os = this.dataProvider.getOutputStream(resourceName);
+//			resource.storeAsText(os);
+//			os.flush();
+//			os.close();
 			this.parent.notifyResourcesChanged(this.getClass().getName());
 			return true;
 		}
