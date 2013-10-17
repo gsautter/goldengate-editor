@@ -285,7 +285,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 					this.add(getExplanationLabel(), BorderLayout.CENTER);
 				
 				else {
-					this.editor = new CustomFunctionEditorPanel(dataName, getCustomFunction(set));
+					this.editor = new CustomFunctionEditorPanel(dataName, getCustomFunction(dataName, set));
 					this.add(this.editor, BorderLayout.CENTER);
 				}
 			}
@@ -295,21 +295,18 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		}
 		
 		private boolean createCustomFunction() {
-			return this.createCustomFunction(new Settings(), null);
+			return this.createCustomFunction(null, null, null);
 		}
 		
 		private boolean cloneCustomFunction() {
 			String selectedName = this.resourceNameList.getSelectedName();
 			if (selectedName == null)
 				return this.createCustomFunction();
-			else {
-				String name = "New " + selectedName;
-				return this.createCustomFunction(this.editor.getSettings(), name);
-			}
+			else return this.createCustomFunction(selectedName, this.editor.getSettings(), ("New " + selectedName));
 		}
 		
-		private boolean createCustomFunction(Settings modelCustomFunction, String name) {
-			CreateCustomFunctionDialog ccfd = new CreateCustomFunctionDialog(name, getCustomFunction(modelCustomFunction));
+		private boolean createCustomFunction(String modelName, Settings modelCustomFunction, String name) {
+			CreateCustomFunctionDialog ccfd = new CreateCustomFunctionDialog(name, getCustomFunction(modelName, modelCustomFunction));
 			ccfd.setVisible(true);
 			
 			if (ccfd.isCommitted()) {
@@ -367,10 +364,10 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 	public CustomFunction getCustomFunction(String name) {
 		if (name == null)
 			return null;
-		else return this.getCustomFunction(this.loadSettingsResource(name));
+		else return this.getCustomFunction(name, this.loadSettingsResource(name));
 	}
 	
-	private CustomFunction getCustomFunction(Settings settings) {
+	private CustomFunction getCustomFunction(final String name, Settings settings) {
 		if (settings == null)
 			return null;
 		try {
@@ -408,7 +405,11 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 						filters.add(filter);
 				}
 			
-			return new CustomFunction(label, toolTip, dpm, processorName, ((location.indexOf(PANEL_LOCATION) == -1) ? null : preclusions), (filters.isEmpty() ? ((location.indexOf(CONTEXT_MENU_LOCATION) == -1) ? new String[0] : null) : ((String[]) filters.toArray(new String[filters.size()]))));
+			return new CustomFunction(label, toolTip, dpm, processorName, ((location.indexOf(PANEL_LOCATION) == -1) ? null : preclusions), (filters.isEmpty() ? ((location.indexOf(CONTEXT_MENU_LOCATION) == -1) ? new String[0] : null) : ((String[]) filters.toArray(new String[filters.size()])))) {
+				public String getHelpText() {
+					return loadStringResource(name + ".help");
+				}
+			};
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -423,7 +424,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		private CustomFunctionEditorPanel editor;
 		private String customFunctionName = null;
 		
-		public CreateCustomFunctionDialog(String name, CustomFunction customFunction) {
+		CreateCustomFunctionDialog(String name, CustomFunction customFunction) {
 			super("Create CustomFunction", true);
 			
 			this.nameField = new JTextField((name == null) ? "New CustomFunction" : name);
@@ -553,6 +554,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			
 			this.label.getDocument().addDocumentListener(this);
 			this.toolTip.getDocument().addDocumentListener(this);
+			this.editHelpText.setBorder(BorderFactory.createRaisedBevelBorder());
 			this.editHelpText.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent ae) {
 					editHelpText();
@@ -588,7 +590,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 //			functionPanel.add(this.label, gbc.clone());
 			gbc.weightx = 1;
 			functionPanel.add(this.label, gbc.clone());
-			gbc.gridx = 1;
+			gbc.gridx = 2;
 			gbc.weightx = 0;
 			functionPanel.add(this.editHelpText, gbc.clone());
 			
@@ -1978,10 +1980,20 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			//	initialize editors
 			this.editor.setText((helpText == null) ? "" : helpText);
 			
+			//	make editor scrollable
+			JScrollPane editorBox = new JScrollPane(this.editor);
+			editorBox.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+			editorBox.getVerticalScrollBar().setUnitIncrement(25);
+			editorBox.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+			editorBox.getHorizontalScrollBar().setUnitIncrement(25);
+			JScrollPane previewBox = new JScrollPane(this.preview);
+			previewBox.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+			previewBox.getVerticalScrollBar().setUnitIncrement(25);
+			
 			//	put editor in tabs
 			final JTabbedPane tabs = new JTabbedPane();
-			tabs.addTab("Editor", this.editor);
-			tabs.addTab("Preview", this.preview);
+			tabs.addTab("Editor", editorBox);
+			tabs.addTab("Preview", previewBox);
 			tabs.addChangeListener(new ChangeListener() {
 				public void stateChanged(ChangeEvent ce) {
 					if (tabs.getSelectedComponent() == preview) {

@@ -49,6 +49,7 @@ import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -217,21 +218,18 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		}
 		
 		private boolean createCustomShortcut() {
-			return this.createCustomShortcut(new Settings(), null);
+			return this.createCustomShortcut(null, null, null);
 		}
 		
 		private boolean cloneCustomShortcut() {
 			String selectedName = this.resourceNameList.getSelectedName();
 			if (selectedName == null)
 				return this.createCustomShortcut();
-			else {
-				String name = "New " + selectedName;
-				return this.createCustomShortcut(this.editor.getSettings(), name);
-			}
+			else return this.createCustomShortcut(selectedName, this.editor.getSettings(), ("New " + selectedName));
 		}
 		
-		private boolean createCustomShortcut(Settings modelCustomShortcut, String name) {
-			CreateCustomShortcutDialog cpd = new CreateCustomShortcutDialog(name, getCustomShortcut(modelCustomShortcut));
+		private boolean createCustomShortcut(String modelName, Settings modelCustomShortcut, String name) {
+			CreateCustomShortcutDialog cpd = new CreateCustomShortcutDialog(name, getCustomShortcut(modelName, modelCustomShortcut));
 			cpd.setVisible(true);
 			
 			if (cpd.isCommitted()) {
@@ -297,7 +295,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 					this.add(getExplanationLabel(), BorderLayout.CENTER);
 				
 				else {
-					this.editor = new CustomShortcutEditorPanel(dataName, getCustomShortcut(set));
+					this.editor = new CustomShortcutEditorPanel(dataName, getCustomShortcut(dataName, set));
 					this.add(this.editor, BorderLayout.CENTER);
 				}
 			}
@@ -319,18 +317,21 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 	
 	/**
 	 * retrieve a CustomShortcut by its name
-	 * @param name the name of the reqired CustomShortcut
+	 * @param name the name of the required CustomShortcut
 	 * @return the CustomShortcut with the required name, or null, if there is
 	 *         no such CustomShortcut
 	 */
 	public CustomShortcut getCustomShortcut(String name) {
-		if (name == null) return null;
-		if (!name.endsWith(FILE_EXTENSION)) name += FILE_EXTENSION;
-		return this.getCustomShortcut(this.loadSettingsResource(name));
+		if (name == null)
+			return null;
+		if (!name.endsWith(FILE_EXTENSION))
+			name += FILE_EXTENSION;
+		return this.getCustomShortcut(name, this.loadSettingsResource(name));
 	}
 	
-	private CustomShortcut getCustomShortcut(Settings settings) {
-		if (settings == null) return null;
+	private CustomShortcut getCustomShortcut(final String name, Settings settings) {
+		if (settings == null)
+			return null;
 		try {
 			String annotationType = settings.getSetting(ANNOTATION_TYPE_ATTRIBUTE, "");
 			
@@ -343,7 +344,11 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			}
 			
 			DocumentProcessorManager dpm = this.parent.getDocumentProcessorProvider(processorProviderClassName);
-			return new CustomShortcut(annotationType, dpm, processorName);
+			return new CustomShortcut(annotationType, dpm, processorName) {
+				public String getHelpText() {
+					return loadStringResource(name + ".help");
+				}
+			};
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -494,6 +499,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		
 		private String name;
 		private boolean dirty = false;
+		private boolean helpTextDirty = false;
 		
 		private JTextField annotationType = new JTextField();
 		private String helpText;
@@ -621,7 +627,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		}
 		
 		boolean isDirty() {
-			return this.dirty;
+			return (this.dirty || this.helpTextDirty);
 		}
 		
 		private void updateLabels() {
@@ -644,7 +650,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			hed.setVisible(true);
 			if (hed.isCommitted()) {
 				this.helpText = hed.getHelpText();
-				this.dirty = true;
+				this.helpTextDirty = true;
 			}
 		}
 		
@@ -699,8 +705,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 //				set.setSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE, this.processorProvider.getClass().getName());
 			}
 			
-			//	TODO figure out when to save this (this method is called for more than just saving)
-			if (this.helpText != null) try {
+			if (this.helpTextDirty && (this.helpText != null)) try {
 				storeStringResource((this.name + ".help"), this.helpText);
 			} catch (IOException ioe) {}
 			
@@ -742,10 +747,20 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			//	initialize editors
 			this.editor.setText((helpText == null) ? "" : helpText);
 			
+			//	make editor scrollable
+			JScrollPane editorBox = new JScrollPane(this.editor);
+			editorBox.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+			editorBox.getVerticalScrollBar().setUnitIncrement(25);
+			editorBox.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+			editorBox.getHorizontalScrollBar().setUnitIncrement(25);
+			JScrollPane previewBox = new JScrollPane(this.preview);
+			previewBox.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+			previewBox.getVerticalScrollBar().setUnitIncrement(25);
+			
 			//	put editor in tabs
 			final JTabbedPane tabs = new JTabbedPane();
-			tabs.addTab("Editor", this.editor);
-			tabs.addTab("Preview", this.preview);
+			tabs.addTab("Editor", editorBox);
+			tabs.addTab("Preview", previewBox);
 			tabs.addChangeListener(new ChangeListener() {
 				public void stateChanged(ChangeEvent ce) {
 					if (tabs.getSelectedComponent() == preview) {
