@@ -781,7 +781,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	public void buildToolsMenu(JMenu toolsMenu, final InvokationTargetProvider targetProvider) {
 		
 		//	TODO put plugin specific function items at bottom of menu, under separator
-		//	==> 'Apply' / 'Run' / etc menu item alwasy stays in main menu
+		//	==> 'Apply' / 'Run' / etc menu item always stays in main menu
 		//	==> plugins can exist only in order to extend tools menu, without providing any resources
 		
 		ArrayList annotationSourceToolsMenuItems = new ArrayList();
@@ -928,6 +928,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 */
 	public void buildHelpMenu(JMenu helpMenu) {
 		JMenuItem mi;
+		boolean lastWasSeparator = true;
 		
 		//	create help menu and further content
 		mi = new JMenuItem("Help on GoldenGATE");
@@ -937,6 +938,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			}
 		});
 		helpMenu.add(mi);
+		lastWasSeparator = false;
 		mi = new JMenuItem("Help on File Menu");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
@@ -944,6 +946,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			}
 		});
 		helpMenu.add(mi);
+		lastWasSeparator = false;
 		mi = new JMenuItem("Help on View Menu");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
@@ -951,6 +954,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			}
 		});
 		helpMenu.add(mi);
+		lastWasSeparator = false;
 		mi = new JMenuItem("Help on Edit Menu");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
@@ -958,6 +962,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			}
 		});
 		helpMenu.add(mi);
+		lastWasSeparator = false;
 		mi = new JMenuItem("Help on Tools Menu");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
@@ -965,10 +970,12 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			}
 		});
 		helpMenu.add(mi);
+		lastWasSeparator = false;
 		
 		GoldenGatePlugin[] plugins = this.getPlugins();
 		if (plugins.length != 0) {
 			helpMenu.addSeparator();
+			lastWasSeparator = true;
 			ArrayList pluginHelpMi = new ArrayList();
 			for (int p = 0; p < plugins.length; p++) {
 				try {
@@ -979,7 +986,18 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 					t.printStackTrace(System.out);
 					mi = null;
 				}
-				if (mi != null) pluginHelpMi.add(mi);
+				if ((mi != null) && (
+						this.configuration.isMasterConfiguration()
+						||
+						(plugins[p] instanceof DocumentLoader) || (plugins[p] instanceof DocumentSaver)
+						||
+						(plugins[p] instanceof DocumentFormatProvider)
+						||
+						(plugins[p] instanceof DocumentViewer)
+						||
+						(plugins[p] instanceof DocumentEditorExtension)
+					))
+					pluginHelpMi.add(mi);
 			}
 			Collections.sort(pluginHelpMi, new Comparator() {
 				public int compare(Object o1, Object o2) {
@@ -988,11 +1006,70 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 					return mi1.getText().compareTo(mi2.getText());
 				}
 			});
-			for (int p = 0; p < pluginHelpMi.size(); p++)
+			for (int p = 0; p < pluginHelpMi.size(); p++) {
 				helpMenu.add((JMenuItem) pluginHelpMi.get(p));
+				lastWasSeparator = false;
+			}
+			
+			if (!this.configuration.isMasterConfiguration()) {
+				ArrayList customHelpMi = new ArrayList();
+				
+				if (this.customFunctionManager != null) {
+					String[] customFunctionNames = this.customFunctionManager.getResourceNames();
+					Arrays.sort(customFunctionNames);
+					for (int n = 0; n < customFunctionNames.length; n++) {
+						final CustomFunction customFunction = this.customFunctionManager.getCustomFunction(customFunctionNames[n]);
+						if (customFunction != null) {
+							String helpText = customFunction.getHelpText();
+							if (helpText != null) {
+								mi = new JMenuItem("Help on '" + customFunction.label + "'");
+								mi.addActionListener(new ActionListener() {
+									public void actionPerformed(ActionEvent ae) {
+										help(customFunction.label);
+									}
+								});
+								customHelpMi.add(mi);
+							}
+						}
+					}
+				}
+				
+				if (this.customShortcutManager != null) {
+					String[] customShortcutNames = this.customShortcutManager.getResourceNames();
+					Arrays.sort(customShortcutNames);
+					for (int n = 0; n < customShortcutNames.length; n++) {
+						final CustomShortcut customShortcut = this.customShortcutManager.getCustomShortcut(customShortcutNames[n]);
+						if (customShortcut != null) {
+							String helpText = customShortcut.getHelpText();
+							if (helpText != null) {
+								mi = new JMenuItem("Help on '" + customShortcut.getHelpLabel() + "'");
+								mi.addActionListener(new ActionListener() {
+									public void actionPerformed(ActionEvent ae) {
+										help(customShortcut.getHelpLabel());
+									}
+								});
+								customHelpMi.add(mi);
+							}
+						}
+					}
+				}
+				
+				if (!lastWasSeparator) {
+					helpMenu.addSeparator();
+					lastWasSeparator = true;
+				}
+				
+				for (int p = 0; p < customHelpMi.size(); p++) {
+					helpMenu.add((JMenuItem) customHelpMi.get(p));
+					lastWasSeparator = false;
+				}
+			}
 		}
 		
-		helpMenu.addSeparator();
+		if (!lastWasSeparator) {
+			helpMenu.addSeparator();
+			lastWasSeparator = true;
+		}
 		mi = new JMenuItem("Help");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
@@ -1000,6 +1077,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			}
 		});
 		helpMenu.add(mi);
+		lastWasSeparator = false;
 		mi = new JMenuItem("About");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
@@ -1007,6 +1085,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			}
 		});
 		helpMenu.add(mi);
+		lastWasSeparator = false;
 		
 		if (this.configuration.isDataAvailable(README_FILE_NAME)) {
 			mi = new JMenuItem("View Readme");
@@ -1016,6 +1095,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 				}
 			});
 			helpMenu.add(mi);
+			lastWasSeparator = false;
 		}
 	}
 	
@@ -1030,7 +1110,8 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		menuHelp.addSubChapter(new DynamicHelpChapter("View", (dataBaseUrl + "ViewMenu.html")));
 		menuHelp.addSubChapter(new DynamicHelpChapter("Edit", (dataBaseUrl + "EditMenu.html")));
 		menuHelp.addSubChapter(new DynamicHelpChapter("Tools", (dataBaseUrl + "ToolsMenu.html")));
-		menuHelp.addSubChapter(new DynamicHelpChapter("Window", (dataBaseUrl + "WindowMenu.html")));
+		if (this.configuration.isMasterConfiguration())
+			menuHelp.addSubChapter(new DynamicHelpChapter("Window", (dataBaseUrl + "WindowMenu.html")));
 		menuHelp.addSubChapter(new DynamicHelpChapter("Help", (dataBaseUrl + "HelpMenu.html")));
 		helpRoot.addSubChapter(menuHelp);
 		
@@ -1059,10 +1140,10 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			helpRoot.addSubChapter(helpPlugins);
 		}
 		else {
-			helpCustomFunctions = new DynamicHelpChapter("Markup Funktions", (dataBaseUrl + "PlugInResources.html"));
-			helpRoot.addSubChapter(helpResourceManagers);
-			helpCustomShortcuts = new DynamicHelpChapter("Editor Shortcuts", (dataBaseUrl + "PlugIns.html"));
-			helpRoot.addSubChapter(helpPlugins);
+			helpCustomFunctions = new DynamicHelpChapter("Markup Funktions", (dataBaseUrl + "MarkupFunctions.html"));
+			helpRoot.addSubChapter(helpCustomFunctions);
+			helpCustomShortcuts = new DynamicHelpChapter("Editor Shortcuts", (dataBaseUrl + "EditorShortcuts.html"));
+			helpRoot.addSubChapter(helpCustomShortcuts);
 		}
 		
 		
@@ -1154,7 +1235,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 					if (customShortcut != null) {
 						String helpText = customShortcut.getHelpText();
 						if (helpText != null)
-							helpCustomShortcuts.addSubChapter(new HelpChapter(customShortcutNames[n], helpText));
+							helpCustomShortcuts.addSubChapter(new HelpChapter(customShortcut.getHelpLabel(), helpText));
 					}
 				}
 			}

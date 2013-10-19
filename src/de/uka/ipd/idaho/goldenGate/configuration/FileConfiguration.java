@@ -146,7 +146,7 @@ public class FileConfiguration extends AbstractConfiguration {
 		
 		this.fileList = ConfigurationUtils.listFilesRelative(this.basePath, new FileFilter() {
 			public boolean accept(File file) {
-				return (!file.isDirectory()
+				return ((!file.isDirectory() && !file.getName().matches(".*\\.[0-9]{8,}\\.(old|new)"))
 						||
 						!FileConfiguration.this.basePath.equals(file.getParentFile())
 						|| (
@@ -799,86 +799,7 @@ public class FileConfiguration extends AbstractConfiguration {
 			}
 		}
 	}
-//	
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#getOutputStream(java.lang.String)
-//	 */
-//	public OutputStream getOutputStream(String dataName) throws IOException {
-//		File dataFile = this.getFile(dataName);
-//		
-//		if (dataFile.exists()) {
-//			dataFile.renameTo(new File(dataFile.getPath() + "." + System.currentTimeMillis() + ".old"));
-//			dataFile = this.getFile(dataName);
-//		}
-//		else dataFile.getParentFile().mkdirs();
-//		
-//		dataFile.createNewFile();
-//		this.byteCache.remove(dataName);
-//		return new TimeoutOutputStream(new FileOutputStream(dataFile), dataName);
-//	}
-//	
-//	/**
-//	 * wrapper for output streams to automatically flush and close the wrapped stream if inactive for more than 30 seconds
-//	 * 
-//	 * @author sautter
-//	 */
-//	private class TimeoutOutputStream extends FilterOutputStream {
-//		private String dataName; 
-//		
-//		private long lastWritten = System.currentTimeMillis();
-//		
-//		TimeoutOutputStream(OutputStream out, String dn) {
-//			super(out);
-//			this.dataName = dn;
-//			
-//			//	start watchdog
-//			new Thread() {
-//				public void run() {
-//					
-//					//	watch out if stream closed externally
-//					while (lastWritten != -1) {
-//						
-//						//	close stream if timeout expired
-//						if ((System.currentTimeMillis() - lastWritten) > 30000) {
-//							try {
-//								System.out.println("Auto-Closing OutputStream for '" + dataName + "'");
-//								flush();
-//								close();
-//							} catch (IOException ioe) {}
-//							return;
-//						}
-//						
-//						//	wait 1 second before checking again
-//						try {
-//							sleep(1000);
-//						} catch (InterruptedException ie) {}
-//						
-//					}
-//				}
-//			}.start();
-//		}
-//		
-//		public void close() throws IOException {
-//			this.lastWritten = -1;
-//			fileList.addElementIgnoreDuplicates(this.dataName);
-//			fileList.sortLexicographically(false, false);
-//			super.close();
-//		}
-//
-//		public void write(int b) throws IOException {
-//			this.lastWritten = System.currentTimeMillis();
-//			super.write(b);
-//		}
-//		
-//		protected void finalize() throws Throwable {
-//			if (this.lastWritten != -1) {
-//				System.out.println("Auto-Closing OutputStream on Finalization for '" + this.dataName + "'");
-//				this.flush();
-//				this.close();
-//			}
-//		}
-//	}
-//	
+	
 	/* (non-Javadoc)
 	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#deleteData(java.lang.String)
 	 */
@@ -971,7 +892,7 @@ public class FileConfiguration extends AbstractConfiguration {
 		byte[] data = new byte[BUFFER_SIZE];
 		while ((count = source.read(data, 0, BUFFER_SIZE)) != -1) {
 			
-			//	create terget file only after first bytes are read from source to prevent creating empty files
+			//	create target file only after first bytes are read from source to prevent creating empty files
 			if (target == null) {
 				targetFile = new File(targetRoot, fileName);
 				targetFile.getParentFile().mkdirs();
@@ -994,27 +915,5 @@ public class FileConfiguration extends AbstractConfiguration {
 				targetFile.setLastModified(sourceTimestamp);
 			} catch (RuntimeException re) {}
 		}
-//		
-//		//	create target file
-//		File targetFile = new File(targetRoot, fileName);
-//		targetFile.getParentFile().mkdirs();
-//		targetFile.createNewFile();
-//		
-//		//	open target file
-//		OutputStream target = new BufferedOutputStream(new FileOutputStream(targetFile));
-//		
-//		//	copy data
-//		int count;
-//		byte[] data = new byte[BUFFER_SIZE];
-//		while ((count = source.read(data, 0, BUFFER_SIZE)) != -1)
-//			target.write(data, 0, count);
-//		source.close();
-//		target.flush();
-//		target.close();
-//		
-//		//	set modification data of copy
-//		try {
-//			targetFile.setLastModified(sourceTimestamp);
-//		} catch (RuntimeException re) {}
 	}
 }

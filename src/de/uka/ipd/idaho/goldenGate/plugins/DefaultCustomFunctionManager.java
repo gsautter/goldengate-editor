@@ -55,6 +55,7 @@ import java.util.LinkedHashMap;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -873,12 +874,12 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 	}
 	
 	private class PreclusionEditorPanel extends JPanel {
-
 		private ArrayList preclusions = new ArrayList();
 		private int selectedPreclusion = -1;
 		
 		private JLabel filterLabel = new JLabel("GPath Filter Expression", JLabel.CENTER);
-		private JLabel messageLabel = new JLabel("Error Message to Show", JLabel.CENTER);
+		private JLabel messageLabel = new JLabel("Message to Show", JLabel.CENTER);
+		private JLabel isWarningLabel = new JLabel("Warning, not Error?", JLabel.CENTER);
 		private JPanel linePanelSpacer = new JPanel();
 		private JPanel linePanel = new JPanel(new GridBagLayout());
 		
@@ -897,6 +898,15 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			this.messageLabel.setBorder(BorderFactory.createRaisedBevelBorder());
 			this.messageLabel.setPreferredSize(new Dimension(160, 21));
 			this.messageLabel.addMouseListener(new MouseAdapter() {
+				public void mouseClicked(MouseEvent me) {
+					selectPreclusion(-1);
+					linePanel.requestFocusInWindow();
+				}
+			});
+			
+			this.isWarningLabel.setBorder(BorderFactory.createRaisedBevelBorder());
+			this.isWarningLabel.setPreferredSize(new Dimension(100, 21));
+			this.isWarningLabel.addMouseListener(new MouseAdapter() {
 				public void mouseClicked(MouseEvent me) {
 					selectPreclusion(-1);
 					linePanel.requestFocusInWindow();
@@ -1001,14 +1011,14 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			JButton upButton = new JButton("Up");
 			upButton.setBorder(BorderFactory.createRaisedBevelBorder());
 			upButton.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
+				public void actionPerformed(ActionEvent ae) {
 					moveUp();
 				}
 			});
 			JButton downButton = new JButton("Down");
 			downButton.setBorder(BorderFactory.createRaisedBevelBorder());
 			downButton.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
+				public void actionPerformed(ActionEvent ae) {
 					moveDown();
 				}
 			});
@@ -1058,6 +1068,8 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			gbc.gridx = 1;
 			gbc.weightx = 0;
 			this.linePanel.add(this.messageLabel, gbc.clone());
+			gbc.gridx = 2;
+			this.linePanel.add(this.isWarningLabel, gbc.clone());
 			gbc.gridy++;
 			
 			for (int l = 0; l < this.preclusions.size(); l++) {
@@ -1070,13 +1082,15 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				gbc.gridx = 1;
 				gbc.weightx = 0;
 				this.linePanel.add(line.messagePanel, gbc.clone());
+				gbc.gridx = 2;
+				this.linePanel.add(line.isWarning, gbc.clone());
 				gbc.gridy++;
 			}
 			
 			gbc.gridx = 0;
 			gbc.weightx = 1;
 			gbc.weighty = 1;
-			gbc.gridwidth = 2;
+			gbc.gridwidth = 3;
 			this.linePanel.add(this.linePanelSpacer, gbc.clone());
 			
 			this.validate();
@@ -1092,11 +1106,13 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				if (l == this.selectedPreclusion) {
 					line.filterPanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
 					line.messagePanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
+					line.isWarning.setBorder(BorderFactory.createLineBorder(Color.BLUE));
 				}
 				else {
 					line.setEditing(false);
 					line.filterPanel.setBorder(BorderFactory.createLineBorder(this.getBackground()));
 					line.messagePanel.setBorder(BorderFactory.createLineBorder(this.getBackground()));
+					line.isWarning.setBorder(BorderFactory.createLineBorder(this.getBackground()));
 				}
 			}
 			
@@ -1121,17 +1137,18 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		}
 		
 		void addPreclusion() {
-			AddPreclusionDialog acd = new AddPreclusionDialog();
-			acd.setVisible(true);
-			String filter = acd.getFilter();
+			AddPreclusionDialog apd = new AddPreclusionDialog();
+			apd.setVisible(true);
+			String filter = apd.getFilter();
 			if (filter != null)
-				this.addPreclusion(filter, acd.getMessage());
+				this.addPreclusion(filter, apd.getMessage(), apd.isWarning());
 		}
 		
-		void addPreclusion(String filter, String message) {
-			CustomFunctionPreclusion line = new CustomFunctionPreclusion(filter, message);
+		void addPreclusion(String filter, String message, boolean isWarning) {
+			CustomFunctionPreclusion line = new CustomFunctionPreclusion(filter, message, isWarning);
 			line.filterPanel.setBorder(BorderFactory.createLineBorder(this.getBackground()));
 			line.messagePanel.setBorder(BorderFactory.createLineBorder(this.getBackground()));
+			line.isWarning.setBorder(BorderFactory.createLineBorder(this.getBackground()));
 			this.preclusions.add(line);
 			this.layoutPreclusions();
 			this.selectPreclusion(this.preclusions.size() - 1);
@@ -1206,7 +1223,9 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			private JLabel messageDisplay = new JLabel("", JLabel.LEFT);
 			private JTextField messageInput = new JTextField("");
 			
-			CustomFunctionPreclusion(String filter, String message) {
+			JCheckBox isWarning = new JCheckBox("");
+			
+			CustomFunctionPreclusion(String filter, String message, boolean isWarning) {
 				this.filter = filter;
 				this.message = message;
 				
@@ -1302,8 +1321,15 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 					}
 				});
 				
+				this.isWarning.setSelected(isWarning);
+				this.isWarning.setOpaque(true);
+				this.isWarning.setBackground(Color.WHITE);
+				this.isWarning.setHorizontalAlignment(JCheckBox.CENTER);
+				this.isWarning.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
+				
 				this.filterPanel.setPreferredSize(new Dimension(160, 21));
 				this.messagePanel.setPreferredSize(new Dimension(160, 21));
+				this.isWarning.setPreferredSize(new Dimension(100, 21));
 				
 				this.layoutParts(false);
 			}
@@ -1357,6 +1383,9 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				this.messageDirty = true;
 				this.updateMessage();
 			}
+			boolean isWarning() {
+				return this.isWarning.isSelected();
+			}
 			void setEditing(boolean editing) {
 				if (this.isEditing == editing)
 					return;
@@ -1394,6 +1423,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			private boolean committed = true;
 			private JTextField filterInput;
 			private JTextField messageInput;
+			private JCheckBox isWarning = new JCheckBox("");
 			
 			AddPreclusionDialog() {
 				super("Add Preclusion", true);
@@ -1406,11 +1436,16 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				this.messageInput.setBorder(BorderFactory.createLoweredBevelBorder());
 				this.messageInput.setEditable(true);
 				
-				JPanel inputPanel = new JPanel(new GridLayout(2, 2), true);
+				this.isWarning.setBorder(BorderFactory.createLoweredBevelBorder());
+				this.isWarning.setHorizontalAlignment(JCheckBox.CENTER);
+				
+				JPanel inputPanel = new JPanel(new GridLayout(2, 3), true);
 				inputPanel.add(new JLabel("Preclusion GPath Filter Expression", JLabel.CENTER));
-				inputPanel.add(new JLabel("Error Message to Show on Match", JLabel.CENTER));
+				inputPanel.add(new JLabel("Message to Show on Match", JLabel.CENTER));
+				inputPanel.add(new JLabel("Warning, not Error?", JLabel.CENTER));
 				inputPanel.add(this.filterInput);
 				inputPanel.add(this.messageInput);
+				inputPanel.add(this.isWarning);
 				
 				JButton addPreclusionButton = new JButton("Add Preclusion");
 				addPreclusionButton.setPreferredSize(new Dimension(100, 21));
@@ -1474,6 +1509,10 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			String getMessage() {
 				return (this.committed ? this.messageInput.getText() : null);
 			}
+			
+			boolean isWarning() {
+				return (this.committed ? this.isWarning.isSelected() : false);
+			}
 		}
 		void setContent(LinkedHashMap preclusions) {
 			this.preclusions.clear();
@@ -1482,7 +1521,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				String filter = ((String) fit.next());
 				String message = ((String) preclusions.get(filter));
 				if (message != null)
-					this.addPreclusion(filter, message);
+					this.addPreclusion(filter, (message.startsWith("W:") ? message.substring("W:".length()) : message), message.startsWith("W:"));
 			}
 			this.layoutPreclusions();
 			this.selectPreclusion(0);
@@ -1490,11 +1529,11 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		LinkedHashMap getPreclusions() {
 			LinkedHashMap preclusions = new LinkedHashMap();
 			for (int c = 0; c < this.preclusions.size(); c++) {
-				CustomFunctionPreclusion mc = ((CustomFunctionPreclusion) this.preclusions.get(c));
-				String filter = mc.getFilter();
-				String message = mc.getMessage();
+				CustomFunctionPreclusion cfp = ((CustomFunctionPreclusion) this.preclusions.get(c));
+				String filter = cfp.getFilter();
+				String message = cfp.getMessage();
 				if (this.validateFilter(filter) && this.validateMessage(message))
-					preclusions.put(filter, message);
+					preclusions.put(filter, ((cfp.isWarning() ? "W:" : "") + message));
 			}
 			return preclusions;
 		}
@@ -1981,22 +2020,22 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			this.editor.setText((helpText == null) ? "" : helpText);
 			
 			//	make editor scrollable
-			JScrollPane editorBox = new JScrollPane(this.editor);
+			final JScrollPane editorBox = new JScrollPane(this.editor);
 			editorBox.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 			editorBox.getVerticalScrollBar().setUnitIncrement(25);
 			editorBox.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 			editorBox.getHorizontalScrollBar().setUnitIncrement(25);
-			JScrollPane previewBox = new JScrollPane(this.preview);
+			final JScrollPane previewBox = new JScrollPane(this.preview);
 			previewBox.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 			previewBox.getVerticalScrollBar().setUnitIncrement(25);
 			
-			//	put editor in tabs
+			//	put editor in tabs TODO make sure preview is filled
 			final JTabbedPane tabs = new JTabbedPane();
 			tabs.addTab("Editor", editorBox);
 			tabs.addTab("Preview", previewBox);
 			tabs.addChangeListener(new ChangeListener() {
 				public void stateChanged(ChangeEvent ce) {
-					if (tabs.getSelectedComponent() == preview) {
+					if (tabs.getSelectedComponent() == previewBox) {
 						String ht = editor.getText();
 						if ((ht.length() > 6) && ("<html>".equals(ht.substring(0, 6).toLowerCase()) || "<html ".equals(ht.substring(0, 6).toLowerCase())))
 							preview.setContentType("text/html");

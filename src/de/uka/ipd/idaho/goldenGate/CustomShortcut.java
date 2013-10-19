@@ -43,6 +43,9 @@ import de.uka.ipd.idaho.goldenGate.plugins.ResourceManager;
  */
 public class CustomShortcut {
 	
+	/** the combination of keys triggering the shortcut */
+	public final String keyCombination;
+	
 	/** the type of annotation to create */
 	public final String annotationType;
 	
@@ -51,13 +54,15 @@ public class CustomShortcut {
 	
 	/**
 	 * Constructor
+	 * @param keyCombination the combination of keys triggering the shortcut
 	 * @param annotationType the type of the Annotation to create
 	 * @param processorProvider the document processor manager to load the
 	 *            document processor from
 	 * @param processorName the name of the document processor to use
 	 */
-	public CustomShortcut(String annotationType, DocumentProcessorManager processorProvider, String processorName) {
+	public CustomShortcut(String keyCombination, String annotationType, DocumentProcessorManager processorProvider, String processorName) {
 		this.annotationType = ((annotationType == null) ? "" : annotationType.trim());
+		this.keyCombination = keyCombination;
 		this.processorProvider = processorProvider;
 		this.processorName = processorName;
 	}
@@ -89,12 +94,34 @@ public class CustomShortcut {
 	}
 	
 	/**
-	 * Retrieve a help text explaining what the custom shortcut does in more
-	 * detail than possible in a tooltip text. If GoldenGATE Document Editor is
-	 * started with a non-master configuration, explanation text becomes part
-	 * of the help, using the custom shortcut key combination as the title. The
-	 * returned string may be plain text or HTML; in the latter case, it has to
-	 * start with '&lt;html&gt;' to indicate so. This default implementation
+	 * Retrieve a label for the help text explaining what the custom shortcut
+	 * does. If GoldenGATE Document Editor is started with a non-master
+	 * configuration, the explanation text becomes part of the help, using the
+	 * return value of this method as the title. The returned string must be
+	 * plain text. This default implementation returns a generic text built
+	 * from the annotation type and selected document processor. Implementations
+	 * of the <code>Manager</code> interface are welcome to provide an
+	 * implementation with more meaningful return values.
+	 * @return the help label
+	 */
+	public String getHelpLabel() {
+		if (this.processorName == null) {
+			if ("".equals(this.annotationType))
+				return this.keyCombination;
+			else return ("Annotate '" + this.annotationType + "' (" + this.keyCombination + ")");
+		}
+		else {
+			if ("".equals(this.annotationType))
+				return ("Run '" + this.processorName + "' (" + this.keyCombination + ")");
+			else return ("Annotate and process '" + this.annotationType + "' (" + this.keyCombination + ")");
+		}
+	}
+	
+	/**
+	 * Retrieve a help text explaining what the custom shortcut does. If
+	 * GoldenGATE Document Editor is started with a non-master configuration,
+	 * this explanation text becomes part of the help, using the help label
+	 * as the title. This default implementation
 	 * returns null, providing no help text. Implementations of the
 	 * <code>Manager</code> interface are welcome to provide an implementation
 	 * with more meaningful return values.

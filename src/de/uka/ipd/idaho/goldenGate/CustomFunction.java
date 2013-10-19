@@ -208,7 +208,8 @@ public class CustomFunction {
 	 * @return true if the custom function is applicable, false otherwise
 	 */
 	public boolean isApplicableTo(QueriableAnnotation doc) {
-		return (this.getPrecludingError(doc) == null);
+		String errorOrWarning = this.getPrecludingError(doc);
+		return ((errorOrWarning == null) || errorOrWarning.startsWith("W:"));
 	}
 	
 	/**
@@ -227,12 +228,20 @@ public class CustomFunction {
 			return (this.label + " is not applicable to whole documents");
 		if (this.panelPreclusions == null)
 			return null;
+		String errorOrWarning = null;
+		String warning = null;
 		for (Iterator pit = this.panelPreclusions.keySet().iterator(); pit.hasNext();) {
 			String gpe = ((String) pit.next());
-			if (GPath.evaluateExpression(gpe, doc, null).asBoolean().value)
-				return ((String) this.panelPreclusions.get(gpe));
+			if (GPath.evaluateExpression(gpe, doc, null).asBoolean().value) {
+				errorOrWarning = ((String) this.panelPreclusions.get(gpe));
+				if (errorOrWarning.startsWith("W:")) {
+					if (warning == null)
+						warning = errorOrWarning;
+				}
+				else return errorOrWarning;
+			}
 		}
-		return null;
+		return warning;
 	}
 	
 	/**

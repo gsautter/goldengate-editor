@@ -86,8 +86,6 @@ public abstract class AbstractConfigurationManager extends AbstractGoldenGatePlu
     - set inside abstract class code to gain access
   ==> add getAttributePanel() --> ConfigurationAttributePanel method in abstract configuration exporter
   - store exporter specific attributes for each export description in "<exportName>.exportAttributes"
-  
-  - facilitate exporting multiple configurations with one click
 	 */
 	
 	/**
@@ -241,7 +239,7 @@ public abstract class AbstractConfigurationManager extends AbstractGoldenGatePlu
 	
 	/**
 	 * Adjust the list of the plugins and resources to include in a export with
-	 * a given name. This is intended to accomodate the specific peculiarities
+	 * a given name. This is intended to accommodate the specific peculiarities
 	 * of the configurations provided by this configuration manager. This
 	 * default implementation does nothing, sub classes are welcome to overwrite
 	 * it as needed.

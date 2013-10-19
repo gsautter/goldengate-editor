@@ -1993,9 +1993,9 @@ public class ConfigurationUtils implements GoldenGateConstants {
 			pm.setInfo(" - " + plugins[p].getPluginName());
 			
 			String pluginSourcePath = jarPathsByClassNamesIndex.getProperty(pluginClassName);
-			System.out.println("  - Plugin loaded from " + pluginSourcePath);
+			System.out.println("  - Plugin loaded from " + ((pluginSourcePath == null) ? "editor core JAR" : pluginSourcePath));
 			
-			//	plugin loaded from extra jar
+			//	plugin loaded from its own jar
 			if (pluginSourcePath != null) {
 				String pluginClassPath = pluginSourcePath;
 				System.out.println("  - Class path is " + pluginClassPath);
@@ -2160,11 +2160,13 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		}
 		
 		StringVector dataNames = getNonResourceDataNames(new File(basePath), ggPlugin, dataPathsByClassNames);
+		System.out.println(" - adding data items:");
 		for (int d = 0; d < dataNames.size(); d++)
 			plugin.dataItems.add(new DataItem(dataNames.get(d).substring(pluginDataPath.length() + 1), (new File(dataNames.get(d))).lastModified()));
 		
 		//	get required plugins
 		Class pluginClass = ggPlugin.getClass();
+		System.out.println(" - adding required plugin links:");
 		while ((pluginClass != null) && !Object.class.equals(pluginClass)) {
 			Field[] fields = pluginClass.getDeclaredFields();
 			for (int f = 0; f < fields.length; f++) {
@@ -2202,13 +2204,12 @@ public class ConfigurationUtils implements GoldenGateConstants {
 				
 				//	'full' resource, write directly
 				else {
-					
 					String[] resDataNames = rm.getDataNamesForResource(resNames[r]);
 					StringVector resDataNameCollector = new StringVector();
 					String resPath = null;
 					for (int d = 0; d < resDataNames.length; d++) {
 						if (resDataNames[d].endsWith("@" + rm.getClass().getName())) {
-							if (resDataNames[d].startsWith(resNames[r]))
+							if (resDataNames[d].startsWith(resNames[r] + "@"))
 								resPath = resNames[r];
 							else {
 								String resDataName = resolve(pluginDataPath, resDataNames[d], dataPathsByClassNames);
@@ -2370,7 +2371,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 					if (!files[f].equals(rootPath) && !files[f].getName().startsWith(ATTIC_FOLDER_NAME) && !files[f].getName().toLowerCase().equals("cache") && !files[f].getName().endsWith(".old"))
 						list.addContentIgnoreDuplicates(listFilesAbsolute(files[f], filter));
 				}
-				else if (!files[f].getName().endsWith(".old"))
+				else if (!files[f].getName().matches(".*\\.[0-9]{8,}\\.(old|new)"))
 					list.addElementIgnoreDuplicates(normalizePath(files[f].getAbsolutePath()));
 			}
 		

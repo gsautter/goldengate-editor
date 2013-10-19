@@ -74,6 +74,7 @@ import de.uka.ipd.idaho.stringUtils.StringVector;
 public class DefaultCustomShortcutManager extends AbstractResourceManager implements CustomShortcut.Manager {
 	
 	private static final String ANNOTATION_TYPE_ATTRIBUTE = "ANNOTATION_TYPE";
+	private static final String HELP_LABEL_ATTRIBUTE = "HELP_LABEL";
 	private static final String PROCESSOR_NAME_ATTRIBUTE = "PROCESSOR_NAME";
 	private static final String PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE = "PROCESSOR_PROVIDER_CLASS";
 	
@@ -333,6 +334,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		if (settings == null)
 			return null;
 		try {
+			final String helpLabel = settings.getSetting(HELP_LABEL_ATTRIBUTE);
 			String annotationType = settings.getSetting(ANNOTATION_TYPE_ATTRIBUTE, "");
 			
 			String processorName = settings.getSetting(PROCESSOR_NAME_ATTRIBUTE);
@@ -343,8 +345,12 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 				processorName = processorName.substring(0, processorName.indexOf('@'));
 			}
 			
+			String keyCombination = name.substring(0, name.indexOf('.'));
 			DocumentProcessorManager dpm = this.parent.getDocumentProcessorProvider(processorProviderClassName);
-			return new CustomShortcut(annotationType, dpm, processorName) {
+			return new CustomShortcut(keyCombination, annotationType, dpm, processorName) {
+				public String getHelpLabel() {
+					return (((helpLabel == null) || (helpLabel.trim().length() == 0)) ? super.getHelpLabel() : helpLabel);
+				}
 				public String getHelpText() {
 					return loadStringResource(name + ".help");
 				}
@@ -502,6 +508,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		private boolean helpTextDirty = false;
 		
 		private JTextField annotationType = new JTextField();
+		private String helpLabel;
 		private String helpText;
 		private JButton editHelpText = new JButton("Edit Help Text");
 		
@@ -517,6 +524,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			
 			if (customShortcut != null) {
 				this.annotationType.setText(customShortcut.annotationType);
+				this.helpLabel = customShortcut.getHelpLabel();
 				this.helpText = customShortcut.getHelpText();
 				this.processorName = customShortcut.getDocumentProcessorName();
 				this.processorProvider = customShortcut.getDocumentProcessorProvider();
@@ -646,9 +654,11 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		}
 		
 		private void editHelpText() {
-			HelpEditorDialog hed = new HelpEditorDialog(this.name, this.helpText);
+			HelpEditorDialog hed = new HelpEditorDialog(this.name, this.helpLabel, this.helpText);
 			hed.setVisible(true);
 			if (hed.isCommitted()) {
+				this.helpLabel = hed.getHelpLabel();
+				this.dirty = true;
 				this.helpText = hed.getHelpText();
 				this.helpTextDirty = true;
 			}
@@ -705,6 +715,8 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 //				set.setSetting(PROCESSOR_PROVIDER_CLASS_NAME_ATTRIBUTE, this.processorProvider.getClass().getName());
 			}
 			
+			if (this.helpLabel != null)
+				set.setSetting(HELP_LABEL_ATTRIBUTE, this.helpLabel);
 			if (this.helpTextDirty && (this.helpText != null)) try {
 				storeStringResource((this.name + ".help"), this.helpText);
 			} catch (IOException ioe) {}
@@ -714,9 +726,10 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 	}
 	
 	private class HelpEditorDialog extends DialogPanel {
+		private JTextField helpLabel = new JTextField();
 		private JTextArea editor = new JTextArea();
 		private JEditorPane preview = new JEditorPane();
-		HelpEditorDialog(String name, String helpText) {
+		HelpEditorDialog(String name, String helpLabel, String helpText) {
 			super(("Edit Help Text for '" + name + "'"), true);
 			
 			//	initialize main buttons
@@ -744,16 +757,24 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			mainButtonPanel.add(commitButton);
 			mainButtonPanel.add(abortButton);
 			
+			//	fill help label
+			this.helpLabel.setText(helpLabel);
+			
+			//	set up help label
+			JPanel helpLabelPanel = new JPanel(new BorderLayout(), true);
+			helpLabelPanel.add(new JLabel("Help Label"), BorderLayout.WEST);
+			helpLabelPanel.add(this.helpLabel, BorderLayout.CENTER);
+			
 			//	initialize editors
 			this.editor.setText((helpText == null) ? "" : helpText);
 			
 			//	make editor scrollable
-			JScrollPane editorBox = new JScrollPane(this.editor);
+			final JScrollPane editorBox = new JScrollPane(this.editor);
 			editorBox.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 			editorBox.getVerticalScrollBar().setUnitIncrement(25);
 			editorBox.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 			editorBox.getHorizontalScrollBar().setUnitIncrement(25);
-			JScrollPane previewBox = new JScrollPane(this.preview);
+			final JScrollPane previewBox = new JScrollPane(this.preview);
 			previewBox.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 			previewBox.getVerticalScrollBar().setUnitIncrement(25);
 			
@@ -763,7 +784,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			tabs.addTab("Preview", previewBox);
 			tabs.addChangeListener(new ChangeListener() {
 				public void stateChanged(ChangeEvent ce) {
-					if (tabs.getSelectedComponent() == preview) {
+					if (tabs.getSelectedComponent() == previewBox) {
 						String ht = editor.getText();
 						if ((ht.length() > 6) && ("<html>".equals(ht.substring(0, 6).toLowerCase()) || "<html ".equals(ht.substring(0, 6).toLowerCase())))
 							preview.setContentType("text/html");
@@ -775,6 +796,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			
 			//	put the whole stuff together
 			this.setLayout(new BorderLayout());
+			this.add(helpLabelPanel, BorderLayout.NORTH);
 			this.add(tabs, BorderLayout.CENTER);
 			this.add(mainButtonPanel, BorderLayout.SOUTH);
 			
@@ -785,6 +807,10 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		
 		boolean isCommitted() {
 			return (this.editor != null);
+		}
+		
+		String getHelpLabel() {
+			return ((this.editor == null) ? null : this.helpLabel.getText().trim());
 		}
 		
 		String getHelpText() {
