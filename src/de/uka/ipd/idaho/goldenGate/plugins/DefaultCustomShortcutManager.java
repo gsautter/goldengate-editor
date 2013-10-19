@@ -349,7 +349,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			DocumentProcessorManager dpm = this.parent.getDocumentProcessorProvider(processorProviderClassName);
 			return new CustomShortcut(keyCombination, annotationType, dpm, processorName) {
 				public String getHelpLabel() {
-					return (((helpLabel == null) || (helpLabel.trim().length() == 0)) ? super.getHelpLabel() : helpLabel);
+					return (((helpLabel == null) || (helpLabel.trim().length() == 0)) ? super.getHelpLabel() : (helpLabel + " (" + this.keyCombination + ")"));
 				}
 				public String getHelpText() {
 					return loadStringResource(name + ".help");
@@ -525,6 +525,8 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			if (customShortcut != null) {
 				this.annotationType.setText(customShortcut.annotationType);
 				this.helpLabel = customShortcut.getHelpLabel();
+				if (this.helpLabel.indexOf("(" + customShortcut.keyCombination) != -1)
+					this.helpLabel = this.helpLabel.substring(0, this.helpLabel.indexOf("(" + customShortcut.keyCombination)).trim();
 				this.helpText = customShortcut.getHelpText();
 				this.processorName = customShortcut.getDocumentProcessorName();
 				this.processorProvider = customShortcut.getDocumentProcessorProvider();
