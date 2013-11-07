@@ -1010,7 +1010,7 @@ public abstract class DocumentFormat extends FileFilter implements Resource {
 	
 	/**
 	 * Retrieve the name of the default character encoding for this document
-	 * format. Note: This mehtod returns the same as getDefaultEncodingName() by
+	 * format. Note: This method returns the same as getDefaultEncodingName() by
 	 * default. Subclasses are welcome to override this method as needed.
 	 * @return the name of the default character encoding for this document
 	 *         format
@@ -1018,6 +1018,18 @@ public abstract class DocumentFormat extends FileFilter implements Resource {
 	public String getFormatDefaultEncodingName() {
 		return defaultEncodingName;
 	}
+	
+	/**
+	 * Check if the document format is actually more a data exporter than a
+	 * fully blown storage format if used for saving a document. This method
+	 * should return true if the document format stores only parts of a
+	 * document or its markup, namely if the output cannot trivially be
+	 * transformed back into the saved document. This indicates to client code
+	 * that it cannot regard the unsaved changes to a document as persisted
+	 * after any of the <code>saveDocument()</code> method returns true.
+	 * @return true to indicate an export format, false otherwise
+	 */
+	public abstract boolean isExportFormat();
 	
 	/* (non-Javadoc)
 	 * @see javax.swing.filechooser.FileFilter#accept(java.io.File)
@@ -1049,9 +1061,10 @@ public abstract class DocumentFormat extends FileFilter implements Resource {
 	
 	/** @see java.lang.Object#equals(java.lang.Object)
 	 */
-	public boolean equals(Object o) {
-		if (o instanceof DocumentFormat) return this.equals((DocumentFormat) o);
-		else return super.equals(o);
+	public boolean equals(Object obj) {
+		if (obj instanceof DocumentFormat)
+			return this.equals((DocumentFormat) obj);
+		else return super.equals(obj);
 	}
 	
 	/** @see java.lang.Object#equals(java.lang.Object)

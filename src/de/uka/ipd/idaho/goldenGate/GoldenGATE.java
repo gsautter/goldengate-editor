@@ -474,19 +474,19 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 *            of them?
 	 * @param includeClose include the menu items for closing documents?
 	 * @param includeCloseAll include the menu items for closing all documents
-	 *            at once? This is recommendet in the editor main window only,
+	 *            at once? This is recommended in the editor main window only,
 	 *            and sensible only if the window can hold multiple open
 	 *            documents at once.
-	 * @param includeChangeConfiguration include the menu items for exitting
+	 * @param includeChangeConfiguration include the menu items for exiting
 	 *            GoldenGATE and restarting it with a newly selected
-	 *            configuration? (this is recommendet only in the editor main
+	 *            configuration? (this is recommended only in the editor main
 	 *            window)
-	 * @param includeExit include the menu items for exitting GoldenGATE? (this
-	 *            is recommendet only in the editor main window)
+	 * @param includeExit include the menu items for exiting GoldenGATE? (this
+	 *            is recommended only in the editor main window)
 	 * @param documentDependentMenuItems a list for adding menu items to that
 	 *            depend on at least one document being open, eg for activating
 	 *            or deactivating them depending on whether a document is open
-	 *            or not. This is recommendet in the editor main window only,
+	 *            or not. This is recommended in the editor main window only,
 	 *            and sensible only if the window can hold multiple open
 	 *            documents at once.
 	 */

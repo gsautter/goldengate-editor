@@ -223,7 +223,7 @@ public class AttributeEditorDialog extends DialogPanel {
 		commitButton.setBorder(BorderFactory.createRaisedBevelBorder());
 		commitButton.setPreferredSize(new Dimension(80, 21));
 		commitButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(ActionEvent ae) {
 				dirty = attributeEditor.writeChanges();
 				AttributeEditorDialog.this.dispose();
 			}
@@ -233,7 +233,7 @@ public class AttributeEditorDialog extends DialogPanel {
 		cancelButton.setBorder(BorderFactory.createRaisedBevelBorder());
 		cancelButton.setPreferredSize(new Dimension(80, 21));
 		cancelButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(ActionEvent ae) {
 				AttributeEditorDialog.this.dispose();
 			}
 		});
@@ -244,7 +244,7 @@ public class AttributeEditorDialog extends DialogPanel {
 		
 		//	put the whole stuff together
 		this.getContentPane().setLayout(new BorderLayout());
-		this.getContentPane().add(attributeEditor, BorderLayout.CENTER);
+		this.getContentPane().add(this.attributeEditor, BorderLayout.CENTER);
 		this.getContentPane().add(mainButtonPanel, BorderLayout.SOUTH);
 		
 		//	configure window

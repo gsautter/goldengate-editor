@@ -3959,7 +3959,19 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 	 */
 	public boolean saveContent(DocumentSaveOperation saveOperation) {
 		String newName = saveOperation.saveDocument(this);
-		if (newName != null) {
+		
+		//	document was only exported, not persisted in full, so we cannot assume all changes to be saved and thus won't act like that
+		if (saveOperation.getDocumentFormat().isExportFormat()) {
+			return true;
+		}
+		
+		//	document was persisted in full, but not where it's supposed to, so we won't assume all changes to be saved
+		else if ((this.lastSaveOperation != null) && this.lastSaveOperation.keepAsDefault()) {
+			return true;
+		}
+		
+		//	document was persisted in full, all changes saved, and possibly name changed
+		else if (newName != null) {
 			this.documentName = newName;
 			this.lastSaveOperation = saveOperation;
 			this.documentFormat = saveOperation.getDocumentFormat();
@@ -3970,6 +3982,8 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 				this.displayUndoHistory();
 			return true;
 		}
+		
+		//	document stored somewhere, but we cannot do this again
 		else {
 			this.host.documentSaved(this, null);
 			if (this.truncateUndoHistory(undoHistorySavedMaxItemCount, undoHistorySavedMaxItemAge))
@@ -3996,9 +4010,9 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 					choosableSaverNames.addElement(saverNames[s]);
 				}
 			}
-			Object o = JOptionPane.showInputDialog(this, "Please select how to save the document.", "Select Saving Method", JOptionPane.QUESTION_MESSAGE, null, choosableSaverNames.toStringArray(), null);
+			Object saverObj = JOptionPane.showInputDialog(this, "Please select how to save the document.", "Select Saving Method", JOptionPane.QUESTION_MESSAGE, null, choosableSaverNames.toStringArray(), null);
 			for (int s = 0; s < savers.length; s++)
-				if (saverNames[s].equals(o)) saver = savers[s];
+				if (saverNames[s].equals(saverObj)) saver = savers[s];
 		}
 		
 		if (saver == null)

@@ -47,13 +47,13 @@ public abstract class SettingsPanel extends JPanel {
 	/** @return the title of this SettingsPanel
 	 */
 	public String getTitle() {
-		return title;
+		return this.title;
 	}
 	
 	/** @return the toolTip of this SettingsPanel
 	 */
 	public String getToolTip() {
-		return toolTip;
+		return this.toolTip;
 	}
 	
 	/** write changes to the backing data structure or component that this SettingsPanel is responsible for configuring

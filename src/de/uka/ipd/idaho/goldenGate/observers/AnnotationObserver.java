@@ -67,7 +67,7 @@ public interface AnnotationObserver {
 	 * argument resource indicates the origin of the change, with null
 	 * indicating that the user made the change in the main editor window.
 	 * @param doc the document the Annotation belongs to
-	 * @param annotation the Annotation whode type changed
+	 * @param annotation the Annotation whose type changed
 	 * @param oldType the type of the Annotation before the change
 	 * @param source the GoldenGATE Resource that performed the modification
 	 */
@@ -78,9 +78,9 @@ public interface AnnotationObserver {
 	 * The argument resource indicates the origin of the change, with null
 	 * indicating that the user made the change in the main editor window.
 	 * @param doc the document the Annotation belongs to
-	 * @param annotation the Annotation whode type changed
+	 * @param annotation the Annotation whose type changed
 	 * @param attributeName the name of the attribute that changed (null
-	 *            indicates that multipla attributes have changed at once, eg
+	 *            indicates that multiple attributes have changed at once, e.g.
 	 *            through clearAttributes() or copyAttributes(), oldValue will
 	 *            be null as well in these cases)
 	 * @param oldValue the value of the attribute before the change (the new

@@ -37,6 +37,15 @@ import de.uka.ipd.idaho.goldenGate.DocumentEditor;
 public interface DocumentSaveOperation {
 	
 	/**
+	 * Indicate whether or not this save operation should remain the default
+	 * one for a given document even after it has been saved through another
+	 * save operation. If this method returns true, a document is tied to this
+	 * save operation until it is closed.
+	 * @return true if the save operation requests to remain the default one
+	 */
+	public abstract boolean keepAsDefault();
+	
+	/**
 	 * Save the content of a DocumentEditor using the settings of this
 	 * DocumentSaveOperation.
 	 * @param data the document to save

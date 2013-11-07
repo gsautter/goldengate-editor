@@ -55,7 +55,7 @@ public interface DocumentSaver {
 	 * Obtain a DocumentSaveOperation.
 	 * @param documentName an initial name for the document to save (eg a file
 	 *            name)
-	 * @param format a sugested DocumentFormat to use
+	 * @param format a suggested DocumentFormat to use
 	 * @return a DocumentSaveOperation that can save a document
 	 */
 	public abstract DocumentSaveOperation getSaveOperation(String documentName, DocumentFormat format);

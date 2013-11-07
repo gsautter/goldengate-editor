@@ -9847,7 +9847,12 @@ public class AnnotationEditorPanel extends JPanel implements GoldenGateConstants
 		if (annotationId == null) {
 			String pe = customFunction.getPrecludingError(this.content);
 			if (pe != null) {
-				int choice = JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), ("The document does not seem to be fit for " + customFunction.label + ":\n" + pe + "\n\nExecuting " + customFunction.label + " anyway might produce undesired results. Proceed?"), ("Document not Fit for '" + customFunction.label + "'"), JOptionPane.WARNING_MESSAGE, JOptionPane.YES_NO_OPTION);
+				boolean isWarning = false;
+				if (pe.startsWith("W:")) {
+					pe = pe.substring("W:".length());
+					isWarning = true;
+				}
+				int choice = JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), ("The document does not seem to be fit for " + customFunction.label + ":\n" + pe + "\n\nExecuting " + customFunction.label + " anyway might produce undesired results. Proceed?"), ("Document not Fit for '" + customFunction.label + "'"), (isWarning ? JOptionPane.WARNING_MESSAGE : JOptionPane.ERROR_MESSAGE), JOptionPane.YES_NO_OPTION);
 				if (choice != JOptionPane.YES_OPTION)
 					return;
 			}

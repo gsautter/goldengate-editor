@@ -2029,7 +2029,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			previewBox.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 			previewBox.getVerticalScrollBar().setUnitIncrement(25);
 			
-			//	put editor in tabs TODO make sure preview is filled
+			//	put editor in tabs
 			final JTabbedPane tabs = new JTabbedPane();
 			tabs.addTab("Editor", editorBox);
 			tabs.addTab("Preview", previewBox);
