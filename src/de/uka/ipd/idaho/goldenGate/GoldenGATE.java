@@ -546,6 +546,10 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 								JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), e.getMessage(), "Exception Loading Document", JOptionPane.ERROR_MESSAGE);
 								e.printStackTrace(System.out);
 							}
+							catch (Throwable t) {
+								JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), t.getMessage(), "Error Loading Document", JOptionPane.ERROR_MESSAGE);
+								t.printStackTrace(System.out);
+							}
 						}
 					});
 				}
@@ -1438,19 +1442,23 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			}
 		}
 		Object o = JOptionPane.showInputDialog(DialogPanel.getTopWindow(), "Please select where to load the document from.", "Select Document Source", JOptionPane.QUESTION_MESSAGE, null, choosableLoaderNames.toStringArray(), null);
-		for (int l = 0; l < loaders.length; l++)
-			if (loaderNames[l].equals(o)) {
-				try {
-					DocumentData dd = loaders[l].loadDocument();
-					if (dd != null) {
-						openDocument(dd.docData, dd.name, dd.format, dd.saveOpertaion);
-						return;
-					}
-				}
-				catch (Exception e) {
-					JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), e.getMessage(), "Exception Loading Document", JOptionPane.ERROR_MESSAGE);
+		for (int l = 0; l < loaders.length; l++) {
+			if (loaderNames[l].equals(o)) try {
+				DocumentData dd = loaders[l].loadDocument();
+				if (dd != null) {
+					openDocument(dd.docData, dd.name, dd.format, dd.saveOpertaion);
+					return;
 				}
 			}
+			catch (Exception e) {
+				JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), e.getMessage(), "Exception Loading Document", JOptionPane.ERROR_MESSAGE);
+				e.printStackTrace(System.out);
+			}
+			catch (Throwable t) {
+				JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), t.getMessage(), "Error Loading Document", JOptionPane.ERROR_MESSAGE);
+				t.printStackTrace(System.out);
+			}
+		}
 	}
 	
 	private static class Logger implements CharSequenceListener, AnnotationListener {
