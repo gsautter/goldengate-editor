@@ -186,7 +186,7 @@ public interface GoldenGateConfiguration extends GoldenGateConstants {
 	public abstract GoldenGatePlugin[] getPlugins();
 
 	/*
-	 * TODO: establich local settings able to reflect individual users' editing
+	 * TODO: establish local settings able to reflect individual users' editing
 	 * preferences (fonts, show tags for new Annotations, etc)
 	 */
 	/**
@@ -201,24 +201,24 @@ public interface GoldenGateConfiguration extends GoldenGateConstants {
 	 * @throws IOException if any occurs storing the settings
 	 */
 	public abstract void storeSettings(Settings settings) throws IOException;
-
+	
 	/**
 	 * @return the base URL for the GoldenGATE help
 	 */
 	public abstract String getHelpBaseURL();
-
+	
 	/**
 	 * Write an entry to the log file (this method may be implemented to do
-	 * nothing if looging is not desired or not possible)
+	 * nothing if logging is not desired or not possible)
 	 * @param entry the entry to write
 	 */
 	public abstract void writeLog(String entry);
-
+	
 	/**
 	 * @return the icon to use for window decoration
 	 */
 	public abstract Image getIconImage();
-
+	
 	/**
 	 * Finalize the configuration (clean up data, close open streams, etc)
 	 * @throws Throwable

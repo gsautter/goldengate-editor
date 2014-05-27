@@ -138,8 +138,8 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			processorName = processorName.substring(0, processorName.indexOf('@'));
 		}
 		
-		if (this.dataProvider.isDataAvailable(name + ".help"))
-			nameCollector.addElementIgnoreDuplicates(name + ".help@" + this.getClass().getName());
+		if (this.dataProvider.isDataAvailable(name + ".help.html"))
+			nameCollector.addElementIgnoreDuplicates(name + ".help.html@" + this.getClass().getName());
 		
 		ResourceManager rm = this.parent.getResourceProvider(processorProviderClassName);
 		if (rm != null)
@@ -408,7 +408,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			
 			return new CustomFunction(label, toolTip, dpm, processorName, ((location.indexOf(PANEL_LOCATION) == -1) ? null : preclusions), (filters.isEmpty() ? ((location.indexOf(CONTEXT_MENU_LOCATION) == -1) ? new String[0] : null) : ((String[]) filters.toArray(new String[filters.size()])))) {
 				public String getHelpText() {
-					return loadStringResource(name + ".help");
+					return loadStringResource(name + ".help.html");
 				}
 			};
 		}
@@ -796,7 +796,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				set.setSetting((FILTER_ATTRIBUTE + f), this.filters[f]);
 			
 			if (this.helpTextDirty && (this.helpText != null)) try {
-				storeStringResource((this.name + ".help"), this.helpText);
+				storeStringResource((this.name + ".help.html"), this.helpText);
 			} catch (IOException ioe) {}
 			
 			return set;

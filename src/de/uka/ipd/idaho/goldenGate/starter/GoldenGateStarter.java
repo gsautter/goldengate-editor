@@ -30,17 +30,11 @@ package de.uka.ipd.idaho.goldenGate.starter;
 
 import java.awt.Toolkit;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
@@ -56,14 +50,6 @@ import de.uka.ipd.idaho.goldenGate.util.UpdateUtils.UpdateStatusDialog;
  * @author sautter
  */
 public class GoldenGateStarter implements GoldenGateConstants {
-	
-	private static boolean batchRun = false;
-	
-	private static boolean logSystemOut = false;
-	private static boolean logError = false;
-	
-	private static final String LOG_TIMESTAMP_DATE_FORMAT = "yyyyMMdd-HHmm";
-	private static final DateFormat LOG_TIMESTAMP_FORMATTER = new SimpleDateFormat(LOG_TIMESTAMP_DATE_FORMAT);
 	
 	/**
 	 * @param args
@@ -82,14 +68,14 @@ public class GoldenGateStarter implements GoldenGateConstants {
 		StringBuffer argAssembler = new StringBuffer();
 		for (int a = 0; a < args.length; a++) {
 			String arg = args[a];
-			if (arg != null) {
-				if (arg.startsWith(BASE_PATH_PARAMETER + "=")) dataBasePath = arg.substring((BASE_PATH_PARAMETER + "=").length());
-				else if (RUN_PARAMETER.equals(arg)) batchRun = true;
-				else {
-					if ((arg.indexOf(' ') != -1) && !arg.startsWith("\""))
-						arg = ("\"" + arg + "\"");
-					argAssembler.append(" " + arg);
-				}
+			if (arg == null)
+				continue;
+			if (arg.startsWith(BASE_PATH_PARAMETER + "="))
+				dataBasePath = arg.substring((BASE_PATH_PARAMETER + "=").length());
+			else {
+				if ((arg.indexOf(' ') != -1) && !arg.startsWith("\""))
+					arg = ("\"" + arg + "\"");
+				argAssembler.append(" " + arg);
 			}
 		}
 		File basePath = new File(dataBasePath);
@@ -105,15 +91,20 @@ public class GoldenGateStarter implements GoldenGateConstants {
 			BufferedReader parameterReader = new BufferedReader(new FileReader(new File(basePath, PARAMETER_FILE_NAME)));
 			String line;
 			while ((line = parameterReader.readLine())  != null) {
-				if (line.startsWith(START_MEMORY_NAME + "=")) startMemory = line.substring(START_MEMORY_NAME.length() + 1).trim();
-				else if (line.startsWith(MAX_MEMORY_NAME + "=")) maxMemory = line.substring(MAX_MEMORY_NAME.length() + 1).trim();
-				else if (line.startsWith(PROXY_NAME + "=")) proxyName = line.substring(PROXY_NAME.length() + 1).trim();
-				else if (line.startsWith(PROXY_PORT + "=")) proxyPort = line.substring(PROXY_PORT.length() + 1).trim();
-				else if (line.startsWith(PROXY_USER + "=")) proxyUser = line.substring(PROXY_USER.length() + 1).trim();
-				else if (line.startsWith(PROXY_PWD + "=")) proxyPwd = line.substring(PROXY_PWD.length() + 1).trim();
-				else if (line.startsWith(LOG_SYSTEM_OUT + "=")) logSystemOut = true;
-				else if (line.startsWith(LOG_ERROR + "=")) logError = true;
+				if (line.startsWith(START_MEMORY_NAME + "="))
+					startMemory = line.substring(START_MEMORY_NAME.length() + 1).trim();
+				else if (line.startsWith(MAX_MEMORY_NAME + "="))
+					maxMemory = line.substring(MAX_MEMORY_NAME.length() + 1).trim();
+				else if (line.startsWith(PROXY_NAME + "="))
+					proxyName = line.substring(PROXY_NAME.length() + 1).trim();
+				else if (line.startsWith(PROXY_PORT + "="))
+					proxyPort = line.substring(PROXY_PORT.length() + 1).trim();
+				else if (line.startsWith(PROXY_USER + "="))
+					proxyUser = line.substring(PROXY_USER.length() + 1).trim();
+				else if (line.startsWith(PROXY_PWD + "="))
+					proxyPwd = line.substring(PROXY_PWD.length() + 1).trim();
 			}
+			parameterReader.close();
 		}
 		catch (FileNotFoundException fnfe) {
 			System.out.println("GoldenGateStarter: " + fnfe.getClass().getName() + " (" + fnfe.getMessage() + ") while reading GoldenGATE startup parameters.");
@@ -155,6 +146,7 @@ public class GoldenGateStarter implements GoldenGateConstants {
 		//	clean up .log and .old files
 		sd.setTitle(STATUS_DIALOG_MAIN_TITLE + " - Cleaning Up Old Files");
 		cleanUpFiles(basePath, ".old");
+		cleanUpFiles(basePath, ".new");
 		cleanUpFiles(basePath, ".log");
 		
 		//	start GoldenGATE itself
@@ -163,56 +155,7 @@ public class GoldenGateStarter implements GoldenGateConstants {
 		System.out.println("GoldenGateStarter: command is '" + command + "'");
 		final Process ggProcess = Runtime.getRuntime().exec(command, null, basePath);
 		
-		//	redirect output
-		String logTimestamp = LOG_TIMESTAMP_FORMATTER.format(new Date());
-		
-		//	TODOne write log files to <UserHomeDir>/GgLogs/, not to program folder (prevents write permission problems)
-		
 		//	TODO try storing configurations in <UserHomeDir>/.../ApplicationData/GgConfigurations/, using current mechanism as fallback, or offering both for transition period
-		
-		sd.setTitle(STATUS_DIALOG_MAIN_TITLE + " - Setting Up Logging");
-		File logPath = new File(System.getProperty("user.home"), "GgLogs");
-		logPath.mkdirs();
-		System.out.println("GoldenGateStarter: log path is " + logPath.getAbsolutePath());
-		final BufferedReader ggSystemOutReader = (logSystemOut ? new BufferedReader(new InputStreamReader(ggProcess.getInputStream())) : null);
-//		final BufferedWriter ggSystemOutLogger = ((batchRun || !logSystemOut) ? null : new BufferedWriter(new FileWriter(new File(basePath, ("GgSystemOut." + logTimestamp + ".log")), true)));
-		final BufferedWriter ggSystemOutLogger = ((batchRun || !logSystemOut) ? null : new BufferedWriter(new FileWriter(new File(logPath, ("GgSystemOut." + logTimestamp + ".log")), true)));
-		new Thread(new Runnable() {
-			public void run() {
-				try {
-					while (logSystemOut) {
-						String s = ggSystemOutReader.readLine();
-						if (s != null) {
-							if (batchRun) System.out.println(s);
-							else {
-								ggSystemOutLogger.write(s);
-								ggSystemOutLogger.newLine();
-							}
-						}
-					}
-				} catch (IOException ioe) {}
-			}
-		}).start();
-		
-		final BufferedReader ggErrorReader = (logError ? new BufferedReader(new InputStreamReader(ggProcess.getErrorStream())) : null);
-//		final BufferedWriter ggErrorLogger = ((batchRun || !logError) ? null : new BufferedWriter(new FileWriter(new File(basePath, ("GgError." + logTimestamp + ".log")), true)));
-		final BufferedWriter ggErrorLogger = ((batchRun || !logError) ? null : new BufferedWriter(new FileWriter(new File(logPath, ("GgError." + logTimestamp + ".log")), true)));
-		new Thread(new Runnable() {
-			public void run() {
-				try {
-					while (logError) {
-						String s = ggErrorReader.readLine();
-						if (s != null) {
-							if (batchRun) System.out.println(s);
-							else {
-								ggErrorLogger.write(s);
-								ggErrorLogger.newLine();
-							}
-						}
-					}
-				} catch (IOException ioe) {}
-			}
-		}).start();
 		
 		//	close startup frame
 		sd.dispose();
@@ -223,20 +166,6 @@ public class GoldenGateStarter implements GoldenGateConstants {
 				try {
 					int ggExit = ggProcess.waitFor();
 					System.out.println("GoldenGATE termined: " + ggExit);
-				} catch (Exception e) {}
-				try {
-					ggSystemOutReader.close();
-					if (!batchRun && logSystemOut) {
-						ggSystemOutLogger.flush();
-						ggSystemOutLogger.close();
-					}
-				} catch (Exception e) {}
-				try {
-					ggErrorReader.close();
-					if (!batchRun && logError) {
-						ggErrorLogger.flush();
-						ggErrorLogger.close();
-					}
 				} catch (Exception e) {}
 				System.exit(0);
 			}
@@ -251,11 +180,12 @@ public class GoldenGateStarter implements GoldenGateConstants {
 				return ((file != null) && (file.isDirectory() || file.getName().endsWith(ending)));
 			}
 		});
-		if (files != null)
-			for (int f = 0; f < files.length; f++) {
-				if (files[f].getName().endsWith(ending))
-					files[f].delete();
-				else cleanUpFiles(files[f], ending);
-			}
+		if (files == null)
+			return;
+		for (int f = 0; f < files.length; f++) {
+			if (files[f].getName().endsWith(ending))
+				files[f].delete();
+			else cleanUpFiles(files[f], ending);
+		}
 	}
 }

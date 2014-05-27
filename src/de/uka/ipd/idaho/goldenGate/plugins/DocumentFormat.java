@@ -387,7 +387,7 @@ public abstract class DocumentFormat extends FileFilter implements Resource {
 		if (DEBUG_CHAR_ENCODING) System.out.println("Determining character encoding ...");
 		BufferedInputStream bis = new BufferedInputStream(source);
 		
-		//	too littel data for determining encoding
+		//	too little data for determining encoding
 		if (bis.available() < 3) {
 			if (DEBUG_CHAR_ENCODING) System.out.print("  - stream too short for determining encoding, ");
 			

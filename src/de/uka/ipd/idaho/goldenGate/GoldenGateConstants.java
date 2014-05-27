@@ -56,14 +56,14 @@ import javax.swing.border.TitledBorder;
 public interface GoldenGateConstants {
 	
 	/**
-	 * provider for target DocumentEditor of function invokations in menu
+	 * provider for target DocumentEditor of function invocations in menu
 	 * function items
 	 * 
 	 * @author sautter
 	 */
 	public static interface InvokationTargetProvider {
 		
-		/**	@return the target DocumentEditor of function invokations
+		/**	@return the target DocumentEditor of function invocations
 		 */
 		public abstract DocumentEditor getFunctionTarget();
 	}
@@ -84,7 +84,7 @@ public interface GoldenGateConstants {
 	 * Type constant for temporary Annotations that might be necessary during
 	 * some editing operations. Annotations of this type will not be displayed
 	 * by any means. Annotations of this type should not remain after the
-	 * operation that created them termiates.
+	 * operation that created them terminates.
 	 */
 	public static final String TEMP_ANNOTATION_TYPE = "t_e_m_p";
 	
@@ -145,7 +145,7 @@ public interface GoldenGateConstants {
 	/** the parameter specifying the base path where GoldenGATE runs */
 	public static final String BASE_PATH_PARAMETER = "PATH";
 	
-	/** the parameter specifying if a log file should be available in case a file configuration is used */
+	/** the parameter specifying the logging behavior and log file name */
 	public static final String LOG_PARAMETER = "LOG";
 	
 	
@@ -169,15 +169,21 @@ public interface GoldenGateConstants {
 	public static final String PROXY_PWD = "PROXY_PWD";
 	
 	
-	/** the setting for logging standard output */
-	public static final String LOG_SYSTEM_OUT = "LOG_SYSTEM_OUT";
+	/** the setting for the log file folder */
+	public static final String LOG_PATH = "LOG_PATH";
+//	
+//	/** the setting for logging standard output */
+//	public static final String LOG_SYSTEM_OUT = "LOG_SYSTEM_OUT";
+//	
+//	/** the setting for logging error output */
+//	public static final String LOG_ERROR = "LOG_ERROR";
+//	
+//	/** the setting value enabling logging of output */
+//	public static final String DO_LOG = "LOG";
 	
-	/** the setting for logging error output */
-	public static final String LOG_ERROR = "LOG_ERROR";
 	
-	/** the setting value enabling logging of output */
-	public static final String DO_LOG = "LOG";
-	
+	/** the default folder for log files data*/
+	public static final String LOG_FOLDER_NAME = "Logs";
 	
 	/** the folder for misc data*/
 	public static final String DATA_FOLDER_NAME = "Data";

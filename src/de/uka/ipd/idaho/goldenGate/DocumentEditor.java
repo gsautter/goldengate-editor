@@ -2229,7 +2229,7 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 			else aed.setLocation(dpEditorDialogLocation);
 			aed.setVisible(true);
 		}
-		else JOptionPane.showMessageDialog(this, "Please edit document properties in main editor.", "Cannot Edit Document Proprties", JOptionPane.INFORMATION_MESSAGE);
+		else JOptionPane.showMessageDialog(this, "Please edit document attributes in main editor.", "Cannot Edit Document Attributes", JOptionPane.INFORMATION_MESSAGE);
 	}
 	
 	private void editDocumentProperties() {
@@ -4041,7 +4041,7 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 	}
 	
 	/**	write some entry to the program log
-	 * @param	entry	the text to write
+	 * @param entry the text to write
 	 */
 	void writeLog(String entry) {
 		this.host.writeLog(this.getTitle() + ": " + entry);

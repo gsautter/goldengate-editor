@@ -42,19 +42,28 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -65,12 +74,16 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.UIManager;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 
 import de.uka.ipd.idaho.easyIO.EasyIO;
 import de.uka.ipd.idaho.easyIO.settings.Settings;
 import de.uka.ipd.idaho.gamta.MutableAnnotation;
+import de.uka.ipd.idaho.gamta.util.ProgressMonitor;
+import de.uka.ipd.idaho.gamta.util.swing.ProgressMonitorDialog;
 import de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration.ConfigurationDescriptor;
 import de.uka.ipd.idaho.goldenGate.GoldenGateConstants.StatusDialog.StatusDialogButton;
 import de.uka.ipd.idaho.goldenGate.configuration.ConfigurationUtils;
@@ -94,6 +107,9 @@ public class GoldenGateApplication implements GoldenGateConstants {
 	private static StringVector UPDATE_HOSTS = new StringVector();
 	private static StringVector CONFIG_HOSTS = new StringVector();
 	
+	private static final String LOG_TIMESTAMP_DATE_FORMAT = "yyyyMMdd-HHmm";
+	private static final DateFormat LOG_TIMESTAMP_FORMATTER = new SimpleDateFormat(LOG_TIMESTAMP_DATE_FORMAT);
+	
 	private static void writeParameterFile() {
 		File parameterFile = new File(BASE_PATH, PARAMETER_FILE_NAME);
 		
@@ -113,12 +129,8 @@ public class GoldenGateApplication implements GoldenGateConstants {
 			parameterWriter.newLine();
 			parameterWriter.write(MAX_MEMORY_NAME + "=" + PARAMETERS.getSetting(MAX_MEMORY_NAME, DEFAULT_MAX_MEMORY));
 			parameterWriter.newLine();
-			if (PARAMETERS.containsKey(LOG_SYSTEM_OUT)) {
-				parameterWriter.write(LOG_SYSTEM_OUT + "=" + DO_LOG);
-				parameterWriter.newLine();
-			}
-			if (PARAMETERS.containsKey(LOG_ERROR)) {
-				parameterWriter.write(LOG_ERROR + "=" + DO_LOG);
+			if (PARAMETERS.containsKey(LOG_PATH)) {
+				parameterWriter.write(LOG_PATH + "=" + PARAMETERS.getSetting(LOG_PATH));
 				parameterWriter.newLine();
 			}
 			if (PARAMETERS.containsKey(PROXY_NAME)) {
@@ -177,7 +189,7 @@ public class GoldenGateApplication implements GoldenGateConstants {
 	}
 	
 	/**	the main method to run GoldenGATE as a standalone application
-	 * @param args the arguments, which ahve the following meaning:<ul>
+	 * @param args the arguments, which have the following meaning:<ul>
 	 * <li>args[0]: the RUN parameter (if not specified, the GoldenGATE.bat startup script will be created)</li>
 	 * <li>args[1]: the ONLINE parameter (if not specified, GoldenGATE will run purely offline and will not allow its plugin components to access the network or WWW)</li>
 	 * <li>args[2]: the root path of the GoldenGATE installation (if not specified, GoldenGATE will use the current path instead, i.e. './')</li>
@@ -213,15 +225,20 @@ public class GoldenGateApplication implements GoldenGateConstants {
 		//	adjust basic parameters
 		String basePath = "./";
 		StringVector filesToOpen = new StringVector();
-		boolean log = false;
+		String logFileName = ("GoldenGATE." + LOG_TIMESTAMP_FORMATTER.format(new Date()) + ".log");
 		
 		//	parse remaining args
 		for (int a = 1; a < args.length; a++) {
 			String arg = args[a];
 			if (arg != null) {
-				if (arg.startsWith(BASE_PATH_PARAMETER + "=")) basePath = arg.substring((BASE_PATH_PARAMETER + "=").length());
-				else if (ONLINE_PARAMETER.equals(arg)) ONLINE = true;
-				else if (LOG_PARAMETER.equals(arg)) log = true;
+				if (arg.startsWith(BASE_PATH_PARAMETER + "="))
+					basePath = arg.substring((BASE_PATH_PARAMETER + "=").length());
+				else if (ONLINE_PARAMETER.equals(arg))
+					ONLINE = true;
+				else if (arg.equals(LOG_PARAMETER + "=IDE") || arg.equals(LOG_PARAMETER + "=NO"))
+					logFileName = null;
+				else if (arg.startsWith(LOG_PARAMETER + "="))
+					logFileName = arg.substring((LOG_PARAMETER + "=").length());
 				else filesToOpen.addElementIgnoreDuplicates(arg);
 			}
 		}
@@ -259,6 +276,58 @@ public class GoldenGateApplication implements GoldenGateConstants {
 			if (PARAMETERS.containsKey(PROXY_USER) && PARAMETERS.containsKey(PROXY_PWD)) {
 				//	initialize proxy authentication
 			}
+		}
+		
+		//	create log files if required
+		File logFolder = null;
+		File logFileOut = null;
+		File logFileErr = null;
+		if (logFileName != null) try {
+			
+			//	truncate log file extension
+			if (logFileName.endsWith(".log"))
+				logFileName = logFileName.substring(0, (logFileName.length() - ".log".length()));
+			
+			//	create absolute log files
+			if (logFileName.startsWith("/") || (logFileName.indexOf(':') != -1)) {
+				logFileOut = new File(logFileName + ".out.log");
+				logFileErr = new File(logFileName + ".err.log");
+				logFolder = logFileOut.getAbsoluteFile().getParentFile();
+			}
+			
+			//	create relative log files (the usual case)
+			else {
+				
+				//	get log path
+				String logFolderName = PARAMETERS.getSetting(LOG_PATH, LOG_FOLDER_NAME);
+				if (logFolderName.startsWith("/") || (logFolderName.indexOf(':') != -1))
+					logFolder = new File(logFolderName);
+				else logFolder = new File(BASE_PATH, logFolderName);
+				logFolder = logFolder.getAbsoluteFile();
+				logFolder.mkdirs();
+				
+				//	create log files
+				logFileOut = new File(logFolder, (logFileName + ".out.log"));
+				logFileErr = new File(logFolder, (logFileName + ".err.log"));
+			}
+			
+			//	redirect System.out
+			logFileOut.getParentFile().mkdirs();
+			logFileOut.createNewFile();
+			System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream(logFileOut)), true, "UTF-8"));
+			
+			//	redirect System.err
+			logFileErr.getParentFile().mkdirs();
+			logFileErr.createNewFile();
+			System.setErr(new PrintStream(new BufferedOutputStream(new FileOutputStream(logFileErr)), true, "UTF-8"));
+		}
+		catch (Exception e) {
+			JOptionPane.showMessageDialog(null, "Could not create log files in folder '" + logFolder.getAbsolutePath() + "'." +
+					"\nCommon reasons are a full hard drive, lack of write permissions to the folder, or system protection software." +
+					"\nUse the 'Configure' button in the configuration selector dialog to select a different log location." +
+					"\nThen exit and re-start GoldenGATE Editor to apply the change." +
+					"\n\nNote that you can work normally without the log files, it's just that in case of an error, there are" +
+					"\nno log files to to help investigate what exactly went wrong and help developers fix the problem.", "Error Creating Log Files", JOptionPane.ERROR_MESSAGE);
 		}
 		
 		//	load update hosts (necessary for editing)
@@ -303,19 +372,19 @@ public class GoldenGateApplication implements GoldenGateConstants {
 				
 				//	local master configuration selected
 				if (MASTER_CONFIG_NAME.equals(configuration.name))
-					ggConfiguration = new FileConfiguration(configuration.name, BASE_PATH, true, ONLINE, (log ? new File(BASE_PATH, ("GoldenGATE." + System.currentTimeMillis() + ".log")) : null));
+					ggConfiguration = new FileConfiguration(configuration.name, BASE_PATH, true, ONLINE, null);
 				
 				//	other local configuration selected
 				else if (configuration.host == null)
-					ggConfiguration = new FileConfiguration(configuration.name, new File(new File(BASE_PATH, CONFIG_FOLDER_NAME), configuration.name), false, ONLINE, (log ? new File(BASE_PATH, ("GoldenGATE." + System.currentTimeMillis() + ".log")) : null));
+					ggConfiguration = new FileConfiguration(configuration.name, new File(new File(BASE_PATH, CONFIG_FOLDER_NAME), configuration.name), false, ONLINE, null);
 				
 				//	remote configuration selected
 				else ggConfiguration = new UrlConfiguration((configuration.host + (configuration.host.endsWith("/") ? "" : "/") + configuration.name), configuration.name);
 				
 				
-				//	TODO: create factory for configuration, select implementation there
+				//	TODOne (selector popup remains specific to this class): create factory for configuration, select implementation there
 				GoldenGATE goldenGate = GoldenGATE.openGoldenGATE(ggConfiguration, true);
-				System.out.println("GoldenGATE window created, configuration is " + configuration.name);
+				System.out.println("GoldenGATE core created, configuration is " + configuration.name);
 				
 				//	set status and open window
 				ggStatus = GoldenGATE.RUNNING;
@@ -371,7 +440,7 @@ public class GoldenGateApplication implements GoldenGateConstants {
 	private static ConfigurationDescriptor selectConfiguration(ConfigurationDescriptor[] configurations, File dataBasePath) {
 		
 		//	show selection dialog
-		SelectConfigurationDialog scd = new SelectConfigurationDialog(Toolkit.getDefaultToolkit().getImage(new File(new File(dataBasePath, DATA_FOLDER_NAME), ICON_FILE_NAME).toString()), configurations);
+		SelectConfigurationDialog scd = new SelectConfigurationDialog(Toolkit.getDefaultToolkit().getImage(new File(new File(dataBasePath, DATA_FOLDER_NAME), ICON_FILE_NAME).toString()), configurations, dataBasePath);
 		scd.setVisible(true);
 		
 		//	wait for selection dialog (it's a JFrame now, setVisible() won't block)
@@ -504,21 +573,22 @@ public class GoldenGateApplication implements GoldenGateConstants {
 		return ((ConfigurationDescriptor[]) configList.toArray(new ConfigurationDescriptor[configList.size()]));
 	}
 	
-	//	TODO facilitate making a configuration the new Local Master Configuration if none exists (check if there is a non-empty Plugins folder and a GoldenGATE.cnfg)
-	
 	/**
-	 * Dialog for selecting the GoldenGateConfiguration to load
+	 * Dialog for selecting the GoldenGATE Configuration to load
 	 * 
 	 * @author sautter
 	 */
 	private static class SelectConfigurationDialog extends JFrame {
 		private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy.MM.dd.HH.mm");
 		private ConfigurationDescriptor[] configs;
+		private File masterBasePath;
 		private ConfigurationDescriptor selectedConfig = null;
-		SelectConfigurationDialog(Image icon, ConfigurationDescriptor[] configs) {
+		private JButton makeMasterConfigButton = new JButton("Make Master");
+		SelectConfigurationDialog(Image icon, ConfigurationDescriptor[] configs, File basePath) {
 			super("Select Configuration");
 			this.setIconImage(icon);
 			this.configs = configs;
+			this.masterBasePath = basePath;
 			this.getContentPane().setLayout(new BorderLayout());
 			
 			this.getContentPane().add(new JLabel("Please select the configuration to load.", JLabel.LEFT), BorderLayout.NORTH);
@@ -562,6 +632,12 @@ public class GoldenGateApplication implements GoldenGateConstants {
 						ke.consume();
 				}
 			});
+			configList.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+				public void valueChanged(ListSelectionEvent lse) {
+					int index = configList.getSelectedRow();
+					makeMasterConfigButton.setEnabled(!MASTER_CONFIG_NAME.equals(SelectConfigurationDialog.this.configs[index].name));
+				}
+			});
 			
 			JScrollPane configListBox = new JScrollPane(configList);
 			configListBox.setViewportBorder(BorderFactory.createLoweredBevelBorder());
@@ -594,6 +670,25 @@ public class GoldenGateApplication implements GoldenGateConstants {
 				public void actionPerformed(ActionEvent ae) {
 					configure();
 					SelectConfigurationDialog.this.selectedConfig = null;
+				}
+			});
+			this.makeMasterConfigButton.setBorder(BorderFactory.createRaisedBevelBorder());
+			this.makeMasterConfigButton.setPreferredSize(new Dimension(100, 21));
+			this.makeMasterConfigButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent ae) {
+					int index = configList.getSelectedRow();
+					if (index != -1) {
+						
+						//	copy selected configuration
+						int masterConfigIndex = makeMasterConfig(SelectConfigurationDialog.this.configs[index]);
+						
+						//	select updated master configuration afterward
+						if (masterConfigIndex != -1) {
+							configList.setRowSelectionInterval(masterConfigIndex, masterConfigIndex);
+							configList.validate();
+							configList.repaint();
+						}
+					}
 				}
 			});
 			JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -721,13 +816,221 @@ public class GoldenGateApplication implements GoldenGateConstants {
 			}
 		}
 		
+		private int makeMasterConfig(ConfigurationDescriptor config) {
+			
+			//	find current master configuration
+			ConfigurationDescriptor masterConfig = null;
+			int masterConfigIndex = -1;
+			for (int c = 0; c < this.configs.length; c++)
+				if (MASTER_CONFIG_NAME.equals(this.configs[c].name)) {
+					masterConfig = this.configs[c];
+					masterConfigIndex = c;
+					break;
+				}
+			if ((masterConfig == null) || (masterConfig == config))
+				return -1;
+			
+			//	test if local master configuration empty
+			File masterConfigPluginPath = new File(this.masterBasePath, PLUGIN_FOLDER_NAME);
+			File[] masterConfigPluginJars = new File[0];
+			if (masterConfigPluginPath.exists() && masterConfigPluginPath.isDirectory())
+				masterConfigPluginJars = masterConfigPluginPath.listFiles(new FileFilter() {
+					public boolean accept(File file) {
+						return (file.isFile() && file.getName().toLowerCase().endsWith(".jar"));
+					}
+				});
+			
+			//	local master configuration already exists, offer merging selected config into it
+			if (masterConfigPluginJars.length != 0) {
+				int choice = JOptionPane.showConfirmDialog(this, ("It seems as if there is already a " + MASTER_CONFIG_NAME + " in this GoldenGATE Editor installation." +
+						"\nIf you choose to proceed, " + config.name + " will be merged into this existing " + MASTER_CONFIG_NAME + "," +
+						"\nupdating any files that are more recent in the former. Do you wish to proceed?"), (MASTER_CONFIG_NAME + " Already Exists"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+				if (choice != JOptionPane.OK_OPTION)
+					return -1;
+			}
+			
+			//	inform about implications of loca master configuration
+			else JOptionPane.showMessageDialog(this, ("Copying " + config.name + " as your " + MASTER_CONFIG_NAME + " in this GoldenGATE Editor installation implies the following:" +
+					"\n1. You can freely modify any resources contained in the " + MASTER_CONFIG_NAME + ", and add new ones." +
+					"\n2. The resources copied from " + config.name + " configuration are decoupled from automated updates." +
+					"\n3. Neither of 1 and 2 affect the resources in the original " + config.name + " configuration," +
+					"\n   only their copies aded to your " + MASTER_CONFIG_NAME + "."), (MASTER_CONFIG_NAME + " Restrictions"), JOptionPane.INFORMATION_MESSAGE);
+			
+			//	copy files
+			try {
+				this.updateMasterConfig(new File(new File(this.masterBasePath, CONFIG_FOLDER_NAME), config.name), this.masterBasePath);
+			}
+			catch (IOException ioe) {
+				System.out.println("Error updating master configuration: " + ioe.getMessage());
+				ioe.printStackTrace(System.out);
+				JOptionPane.showMessageDialog(this, ("An error occurred while copying " + config.name + " as your " + MASTER_CONFIG_NAME + ":" +
+						"\n:" + ioe.getMessage()), (MASTER_CONFIG_NAME + " Update Error"), JOptionPane.ERROR_MESSAGE);
+			}
+			
+			//	indicate where the updated configuration is
+			return masterConfigIndex;
+		}
+		
+		private void updateMasterConfig(File source, File target) throws IOException {
+			
+			//	create progress monitor
+			final ProgressMonitorDialog pmd = new ProgressMonitorDialog(this, ("Updating " + MASTER_CONFIG_NAME + " ..."));
+			pmd.setSize(new Dimension(700, 120));
+			pmd.popUp(false);
+			
+			//	create file list
+			pmd.setStep("Listing Files to Update");
+			HashSet fileList = new HashSet() {
+				private int filesListed = 0;
+				public boolean add(Object o) {
+					if (super.add(o)) {
+						this.filesListed++;
+						return true;
+					}
+					else return false;
+				}
+				private int filesDone = 0;
+				public boolean remove(Object o) {
+					pmd.setBaseProgress((100 * this.filesDone) / this.filesListed);
+					pmd.setBaseProgress((100 * (this.filesDone + 1)) / this.filesListed);
+					if (super.remove(o)) {
+						this.filesDone++;
+						return true;
+					}
+					else return false;
+				}
+			};
+			try {
+				this.listFiles(source, fileList, pmd);
+			}
+			catch (RuntimeException re) {
+				System.out.println("   - Error listing files: " + re.getMessage());
+				re.printStackTrace(System.out);
+				pmd.close();
+				throw new IOException("Could not list files to update - " + re.getMessage());
+			}
+			
+			//	copy files (have to do this recursively again to keep track of folder structure)
+			try {
+				this.updateFileOrFolder(source, target, fileList, pmd);
+			}
+			finally {
+				pmd.close();
+			}
+		}
+		
+		private void listFiles(File file, HashSet fileList, ProgressMonitor pm) {
+			
+			//	handle folder
+			if (file.isDirectory()) {
+				pm.setInfo("- listing files in " + file.getAbsolutePath());
+				
+				//	copy source files (exclude old and new files, and cache folders)
+				File[] files = file.listFiles(new FileFilter() {
+					public boolean accept(File file) {
+						if (file.isFile())
+							return (!file.getName().toLowerCase().endsWith(".old") && !file.getName().toLowerCase().endsWith(".new"));
+						else if (file.isDirectory())
+							return !file.getName().toLowerCase().equals("cache");
+						else return false;
+					}
+				});
+				for (int f = 0; f < files.length; f++)
+					this.listFiles(files[f], fileList, pm);
+			}
+			
+			//	handle file
+			else fileList.add(file);
+		}
+		
+		private void updateFileOrFolder(File source, File target, HashSet sourceList, ProgressMonitor pm) throws IOException {
+			
+			//	handle folder
+			if (source.isDirectory()) {
+				pm.setStep("- Updating Files in " + target.getAbsolutePath());
+				
+				//	make sure target folder exists
+				target.mkdirs();
+				
+				//	copy source files
+				File[] sources = source.listFiles(new FileFilter() {
+					public boolean accept(File file) {
+						if (file.isFile())
+							return (!file.getName().toLowerCase().endsWith(".old") && !file.getName().toLowerCase().endsWith(".new"));
+						else if (file.isDirectory())
+							return !file.getName().toLowerCase().equals("cache");
+						else return false;
+					}
+				});
+				for (int s = 0; s < sources.length; s++)
+					this.updateFileOrFolder(sources[s], new File(target, sources[s].getName()), sourceList, pm);
+			}
+			
+			//	handle file (if contained in list)
+			else if (source.isFile() && sourceList.remove(source)) {
+				pm.setStep("- Updating Files in " + target.getParentFile().getAbsolutePath());
+				pm.setInfo("- updating file " + source.getAbsolutePath());
+				pm.setProgress(0);
+				
+				//	check timestamps
+				if (target.exists() && (source.lastModified() < (target.lastModified() + 1000))) {
+					pm.setProgress(100);
+					return;
+				}
+				
+				//	remember original file name
+				String targetName = target.getAbsolutePath();
+				
+				//	create update file
+				File update = new File(target.getAbsoluteFile().getParent(), (target.getName() + "." + source.lastModified() + ".updating"));
+				if (update.exists()) // clean up possibly corrupted file from earlier update
+					update.delete();
+				else update.getParentFile().mkdirs();
+				update.createNewFile();
+				OutputStream updateOut = new BufferedOutputStream(new FileOutputStream(update));
+				
+				//	connect to source
+				InputStream sourceIn = new BufferedInputStream(new FileInputStream(source));
+				
+				//	copy file
+				int count;
+				int total = 0;
+				byte[] data = new byte[1024];
+				while ((count = sourceIn.read(data, 0, 1024)) != -1) {
+					updateOut.write(data, 0, count);
+					total += count;
+					pm.setProgress((100 * total) / ((int) source.length()));
+				}
+				
+				//	close streams
+				sourceIn.close();
+				updateOut.flush();
+				updateOut.close();
+				
+				//	set timestamp of copied file
+				try {
+					update.setLastModified(source.lastModified());
+					System.out.println("   - last modified set to " + source.lastModified());
+				}
+				catch (RuntimeException re) {
+					System.out.println("   - Error setting file timestamp: " + re.getClass().getName() + " (" + re.getMessage() + ")");
+					re.printStackTrace(System.out);
+				}
+				
+				//	switch from old file to new one
+				if (target.exists())
+					target.renameTo(new File(targetName + "." + source.lastModified() + ".old"));
+				update.renameTo(new File(targetName));
+			}
+		}
+		
 		/**
 		 * dialog for edition local configuration like WWW proxy, JVM memory, etc.
 		 * 
 		 * @author sautter
 		 */
 		private class ConfigurationDialog extends JDialog {
-
+			
 			private JTextField startMemory = new JTextField(PARAMETERS.getSetting(START_MEMORY_NAME, DEFAULT_START_MEMORY));
 			private JTextField maxMemory = new JTextField(PARAMETERS.getSetting(MAX_MEMORY_NAME, DEFAULT_START_MEMORY));
 			
@@ -737,10 +1040,13 @@ public class GoldenGateApplication implements GoldenGateConstants {
 			private JTextField wwwProxyPwd = new JTextField(PARAMETERS.getSetting(PROXY_PWD, ""));
 			
 			private JTextArea updateHosts = new JTextArea(UPDATE_HOSTS.concatStrings("\n"));
-			private JScrollPane updateHostBox = new JScrollPane(updateHosts);
+			private JScrollPane updateHostBox = new JScrollPane(this.updateHosts);
 			
 			private JTextArea configHosts = new JTextArea(CONFIG_HOSTS.concatStrings("\n"));
-			private JScrollPane configHostBox = new JScrollPane(configHosts);
+			private JScrollPane configHostBox = new JScrollPane(this.configHosts);
+			
+			private JButton logFolder = new JButton();
+			private JFileChooser logFolderChooser = new JFileChooser();
 			
 			private boolean committed = false;
 			
@@ -752,7 +1058,7 @@ public class GoldenGateApplication implements GoldenGateConstants {
 				commitButton.setBorder(BorderFactory.createRaisedBevelBorder());
 				commitButton.setPreferredSize(new Dimension(100, 21));
 				commitButton.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent e) {
+					public void actionPerformed(ActionEvent ae) {
 						committed = true;
 						dispose();
 					}
@@ -762,15 +1068,14 @@ public class GoldenGateApplication implements GoldenGateConstants {
 				abortButton.setBorder(BorderFactory.createRaisedBevelBorder());
 				abortButton.setPreferredSize(new Dimension(100, 21));
 				abortButton.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent e) {
+					public void actionPerformed(ActionEvent ae) {
 						dispose();
 					}
 				});
 				
-				JPanel mainButtonPanel = new JPanel();
-				mainButtonPanel.setLayout(new FlowLayout());
-				mainButtonPanel.add(commitButton);
-				mainButtonPanel.add(abortButton);
+				JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+				buttonPanel.add(commitButton);
+				buttonPanel.add(abortButton);
 				
 				//	 initialize main system settings
 				this.startMemory.setBorder(BorderFactory.createLoweredBevelBorder());
@@ -781,7 +1086,23 @@ public class GoldenGateApplication implements GoldenGateConstants {
 				this.updateHostBox.setPreferredSize(new Dimension(450, 60));
 				this.configHostBox.setPreferredSize(new Dimension(450, 60));
 				
-				JPanel mainSystemPanel = new JPanel(new GridBagLayout(), true);
+				this.logFolderChooser.setSelectedFile(this.getLogFolder(PARAMETERS.getSetting(LOG_PATH, LOG_FOLDER_NAME)));
+				this.logFolderChooser.setAcceptAllFileFilterUsed(false);
+				this.logFolderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				this.logFolder.setText(this.getLogFolderName(this.logFolderChooser.getSelectedFile()));
+				this.logFolder.setBorder(BorderFactory.createLoweredBevelBorder());
+				this.logFolder.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent ae) {
+						if (logFolderChooser.showOpenDialog(ConfigurationDialog.this) == JFileChooser.APPROVE_OPTION) {
+							String logFolderName = getLogFolderName(logFolderChooser.getSelectedFile());
+							logFolder.setText(logFolderName);
+							PARAMETERS.setSetting(LOG_PATH, logFolderName);
+						}
+					}
+				});
+				
+				//	assemble data input fields
+				JPanel dataPanel = new JPanel(new GridBagLayout(), true);
 				GridBagConstraints gbc = new GridBagConstraints();
 				gbc.weightx = 1;
 				gbc.weighty = 0;
@@ -797,69 +1118,94 @@ public class GoldenGateApplication implements GoldenGateConstants {
 				gbc.gridx = 0;
 				
 				gbc.gridwidth = 1;
-				mainSystemPanel.add(new JLabel("Initial JVM Memory", JLabel.RIGHT), gbc.clone());
+				dataPanel.add(new JLabel("Initial JVM Memory", JLabel.RIGHT), gbc.clone());
 				gbc.gridx++;
 				gbc.gridwidth = 2;
-				mainSystemPanel.add(this.startMemory, gbc.clone());
+				dataPanel.add(this.startMemory, gbc.clone());
 				gbc.gridx+=2;
 				gbc.gridwidth = 1;
-				mainSystemPanel.add(new JLabel("Maximum JVM Memory", JLabel.RIGHT), gbc.clone());
+				dataPanel.add(new JLabel("Maximum JVM Memory", JLabel.RIGHT), gbc.clone());
 				gbc.gridx++;
 				gbc.gridwidth = 2;
-				mainSystemPanel.add(this.maxMemory, gbc.clone());
+				dataPanel.add(this.maxMemory, gbc.clone());
 				
 				gbc.gridy++;
 				gbc.gridx = 0;
 				gbc.gridwidth = 1;
-				mainSystemPanel.add(new JLabel("Proxy Name", JLabel.RIGHT), gbc.clone());
+				dataPanel.add(new JLabel("Proxy Name", JLabel.RIGHT), gbc.clone());
 				gbc.gridx++;
 				gbc.gridwidth = 3;
-				mainSystemPanel.add(this.wwwProxyName, gbc.clone());
+				dataPanel.add(this.wwwProxyName, gbc.clone());
 				gbc.gridx += 3;
 				gbc.gridwidth = 1;
-				mainSystemPanel.add(new JLabel("Proxy Port", JLabel.RIGHT), gbc.clone());
+				dataPanel.add(new JLabel("Proxy Port", JLabel.RIGHT), gbc.clone());
 				gbc.gridx++;
-				mainSystemPanel.add(this.wwwProxyPort, gbc.clone());
+				dataPanel.add(this.wwwProxyPort, gbc.clone());
 				
 				gbc.gridy++;
 				gbc.gridx = 0;
 				gbc.gridwidth = 1;
-				mainSystemPanel.add(new JLabel("Proxy User", JLabel.RIGHT), gbc.clone());
+				dataPanel.add(new JLabel("Proxy User", JLabel.RIGHT), gbc.clone());
 				gbc.gridx++;
 				gbc.gridwidth = 2;
-				mainSystemPanel.add(this.wwwProxyUser, gbc.clone());
+				dataPanel.add(this.wwwProxyUser, gbc.clone());
 				gbc.gridx += 2;
 				gbc.gridwidth = 1;
-				mainSystemPanel.add(new JLabel("Proxy Password", JLabel.RIGHT), gbc.clone());
+				dataPanel.add(new JLabel("Proxy Password", JLabel.RIGHT), gbc.clone());
 				gbc.gridx++;
 				gbc.gridwidth = 2;
-				mainSystemPanel.add(this.wwwProxyPwd, gbc.clone());
+				dataPanel.add(this.wwwProxyPwd, gbc.clone());
+				
+				gbc.gridy++;
+				gbc.gridx = 0;
+				gbc.gridwidth = 2;
+				dataPanel.add(new JLabel("Log Folder (click to change)", JLabel.RIGHT), gbc.clone());
+				gbc.gridx += 2;
+				gbc.gridwidth = 4;
+				dataPanel.add(this.logFolder, gbc.clone());
 				
 				gbc.gridy++;
 				gbc.gridx = 0;
 				gbc.gridwidth = 1;
 				gbc.weighty = 1;
-				mainSystemPanel.add(new JLabel("Update Hosts", JLabel.RIGHT), gbc.clone());
+				dataPanel.add(new JLabel("Update Hosts", JLabel.RIGHT), gbc.clone());
 				gbc.gridx++;
 				gbc.gridwidth = 5;
-				mainSystemPanel.add(this.updateHostBox, gbc.clone());
+				dataPanel.add(this.updateHostBox, gbc.clone());
 				
 				gbc.gridy++;
 				gbc.gridx = 0;
 				gbc.gridwidth = 1;
-				mainSystemPanel.add(new JLabel("Config Hosts", JLabel.RIGHT), gbc.clone());
+				dataPanel.add(new JLabel("Config Hosts", JLabel.RIGHT), gbc.clone());
 				gbc.gridx++;
 				gbc.gridwidth = 5;
-				mainSystemPanel.add(this.configHostBox, gbc.clone());
+				dataPanel.add(this.configHostBox, gbc.clone());
 				
 				//	put the whole stuff together
 				this.getContentPane().setLayout(new BorderLayout());
-				this.getContentPane().add(mainSystemPanel, BorderLayout.CENTER);
-				this.getContentPane().add(mainButtonPanel, BorderLayout.SOUTH);
+				this.getContentPane().add(dataPanel, BorderLayout.CENTER);
+				this.getContentPane().add(buttonPanel, BorderLayout.SOUTH);
 				
 				//	set dialog size
 				this.setSize(new Dimension(500, 250));
 				this.setResizable(true);
+			}
+			File getLogFolder(String logFolderName) {
+				File logFolder = ((logFolderName.startsWith("/") || (logFolderName.indexOf(':') != -1)) ? new File(logFolderName) : new File(BASE_PATH, logFolderName));
+				return logFolder.getAbsoluteFile();
+			}
+			String getLogFolderName(File logFolder) {
+				String logFolderName = logFolder.getAbsolutePath();
+				logFolderName = logFolderName.replace('\\', '/');
+				logFolderName = logFolderName.replaceAll("\\/(\\.?\\/)*", "/");
+				while (logFolderName.startsWith("./"))
+					logFolderName = logFolderName.substring("./".length());
+				String basePathName = BASE_PATH.getAbsolutePath();
+				basePathName = basePathName.replace('\\', '/');
+				basePathName = basePathName.replaceAll("\\/(\\.?\\/)*", "/");
+				while (basePathName.startsWith("./"))
+					basePathName = basePathName.substring("./".length());
+				return (logFolderName.startsWith(basePathName) ? logFolderName.substring(basePathName.length()) : logFolderName);
 			}
 		}
 	}

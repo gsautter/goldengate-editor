@@ -53,7 +53,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1796,23 +1795,23 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	private void openDocument(DocumentEditor dep) {
-		if (dep != null) {
-			writeLog("Document Opened: " + dep.getTitle());
-			this.openDocuments.add(dep); // remember document opened, display it when GUI is set
-			if (this.gui != null) {
-				if (this.gui.canOpenDocument())
-					this.gui.openDocument(dep);
-				
+		if (dep == null)
+			return;
+		writeLog("Document Opened: " + dep.getTitle());
+		this.openDocuments.add(dep); // remember document opened, display it when GUI is set
+		if (this.gui != null) {
+			if (this.gui.canOpenDocument())
+				this.gui.openDocument(dep);
+			
+			else {
+				DocumentEditor open = this.gui.getFunctionTarget();
+				int openCount = this.gui.getOpenDocumentCount();
+				if (open == null)
+					JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), "With this GUI, GoldenGATE cannot open documents.", "Cannot Open Document", JOptionPane.ERROR_MESSAGE);
 				else {
-					DocumentEditor open = this.gui.getFunctionTarget();
-					int openCount = this.gui.getOpenDocumentCount();
-					if (open == null)
-						JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), "With this GUI, GoldenGATE cannot open documents.", "Cannot Open Document", JOptionPane.ERROR_MESSAGE);
-					else {
-						if (JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), ("With this GUI, GoldenGATE can have only " + ((openCount == 1) ? "one document" : (openCount + " documents")) + " open at the same time. Close current document?"), "Cannot Open Document", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
-							if (this.close(open, false))
-								this.gui.openDocument(dep);
-						}
+					if (JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), ("With this GUI, GoldenGATE can have only " + ((openCount == 1) ? "one document" : (openCount + " documents")) + " open at the same time. Close current document?"), "Cannot Open Document", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
+						if (this.close(open, false))
+							this.gui.openDocument(dep);
 					}
 				}
 			}
@@ -1842,7 +1841,8 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	private boolean close(DocumentEditor target, boolean refill) {
-		if (target == null) return true;
+		if (target == null)
+			return true;
 		else if (target.close()) {
 			this.openDocuments.remove(target);
 			
@@ -1940,7 +1940,6 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			}
 			
 			//	set singleton instance to null
-//			GOLDEN_GATE = null;
 			if (GUI_INSTANCE == this)
 				GUI_INSTANCE = null;
 			INSTANCES_BY_CONFIG_PATH.remove(this.configuration.getAbsolutePath());
@@ -2032,13 +2031,14 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 *         such DocumentEditor
 	 */
 	public DocumentEditor getActivePanel() {
-		if (this.gui == null) return null;
+		if (this.gui == null)
+			return null;
 		
 		DocumentEditor selected = this.gui.getFunctionTarget();
 		if (selected != null)
-			return ((DocumentEditor) selected);
+			return selected;
 		
-		else if (JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), "This function is avaliable only if a Document id opened.\nOpen a Document now?", "Option Not Avalable", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
+		else if (JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), "This function is avaliable only if at least one document is open.\nOpen a document now?", "Option Not Avalable", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
 			this.loadDocument();
 			return this.getActivePanel();
 		}
@@ -2053,18 +2053,6 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	public QueriableAnnotation getActiveDocument() {
 		DocumentEditor activePanel = this.getActivePanel();
 		return ((activePanel == null) ? null : activePanel.getContent());
-//		if (this.gui == null) return null;
-//		
-//		DocumentEditor selected = this.gui.getFunctionTarget();
-//		if (selected != null)
-//			return ((DocumentEditor) selected).getContent();
-//		
-//		else if (JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), "This function is avalaible only if a Document is opened.\nOpen a Document now?", "Option Not Available", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
-//			this.loadDocument();
-//			return this.getActiveDocument();
-//		}
-//		
-//		else return null;
 	}
 	
 	/**
@@ -2072,6 +2060,15 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 */
 	public QueriableAnnotation getTestDocument() {
 		return this.getActiveDocument();
+	}
+	
+	/**
+	 * @return the DocumentEditors currently open
+	 */
+	public DocumentEditor[] getPanels() {
+		if (this.gui == null)
+			return null;
+		return ((DocumentEditor[]) this.openDocuments.toArray(new DocumentEditor[this.openDocuments.size()]));
 	}
 	
 	/**
@@ -2289,7 +2286,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	/**
-	 * Find a ResourceManager by its class name (exspecially useful to find the
+	 * Find a ResourceManager by its class name (especially useful to find the
 	 * provider of a Resource).
 	 * @param providerClassName the class name of the desired ResourceProvider
 	 * @return the ResourceManager with the specified class name
@@ -2318,7 +2315,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	/**
-	 * Find a DocumentProcessorManager by its class name (exspecially useful to
+	 * Find a DocumentProcessorManager by its class name (especially useful to
 	 * find the provider of a DocumentProcessor).
 	 * @param providerClassName the class name of the desired
 	 *            DocumentProcessorProvider
@@ -2393,7 +2390,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	/**
-	 * Find a AnnotationSourceManager by its class name (exspecially useful to
+	 * Find a AnnotationSourceManager by its class name (especially useful to
 	 * find the provider of a AnnotationSource).
 	 * @param providerClassName the class name of the desired
 	 *            AnnotationSourceProvider
@@ -2467,7 +2464,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	/**
-	 * Find a AnnotationFilterManager by its class name (exspecially useful to
+	 * Find a AnnotationFilterManager by its class name (especially useful to
 	 * find the provider of a AnnotationFilters).
 	 * @param providerClassName the class name of the desired
 	 *            AnnotationFilterManager
@@ -2541,7 +2538,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	/**
-	 * Find a DocumentLoader by its class name (exspecially useful to find a
+	 * Find a DocumentLoader by its class name (especially useful to find a
 	 * DocumentLoader).
 	 * @param loaderClassName the class name of the desired DocumentLoader
 	 * @return the DocumentLoader with the specified class name
@@ -2570,7 +2567,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	/**
-	 * Find a DocumentSaver by its class name (exspecially useful to find a
+	 * Find a DocumentSaver by its class name (especially useful to find a
 	 * DocumentSaver).
 	 * @param saverClassName the class name of the desired DocumentSaver
 	 * @return the DocumentSaver with the specified class name
@@ -2599,7 +2596,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	/**
-	 * Find a DocumentFormatProvider by its class name (exspecially useful to
+	 * Find a DocumentFormatProvider by its class name (especially useful to
 	 * find a DocumentFormatProvider).
 	 * @param formatterClassName the class name of the desired
 	 *            DocumentFormatProvider
@@ -2648,12 +2645,6 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 * @see de.uka.ipd.idaho.goldenGate.plugins.DocumentFormatProvider#getFormatForName(java.lang.String)
 	 */
 	public DocumentFormat getDocumentFormatForName(String formatName) {
-//		DocumentFormatProvider[] formatProviders = this.getDocumentFormatProviders();
-//		for (int f = 0; f < formatProviders.length; f++) {
-//			DocumentFormat format = formatProviders[f].getFormatForName(formatName);
-//			if (format != null) return format;
-//		}
-//		return null;
 		int nameSplit = ((formatName == null) ? -1 : formatName.indexOf('@'));
 		if ((nameSplit == -1) || ((nameSplit + 1) == formatName.length()))
 			return this.getDocumentFormatForName(formatName, null);
@@ -2724,7 +2715,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	/**
-	 * Find a DocumentViewer by its class name (exspecially useful to find a
+	 * Find a DocumentViewer by its class name (especially useful to find a
 	 * DocumentViewer).
 	 * @param viewerClassName the class name of the desired DocumentViewer
 	 * @return the DocumentViewer with the specified class name
@@ -2767,7 +2758,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 * Notify all registered ResourceObservers that the resources provided by
 	 * the ResourceManager with the specified name have changed.
 	 * @param resourceProviderClassName the class name of the ResourceManager
-	 *            issuing the cahnge
+	 *            issuing the change
 	 */
 	public void notifyResourcesChanged(String resourceProviderClassName) {
 		for (int o = 0; o < this.resourceObservers.size(); o++)
@@ -3233,77 +3224,10 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			this.dispose();
 		}
 	}
-//	/**
-//	 * status dialog for monitoring GoldenGATE startup
-//	 * 
-//	 * @author sautter
-//	 */
-//	private static class StartupStatusDialog extends JFrame implements Runnable, StartupStatusMonitor {
-//		JLabel configNameLabel = new JLabel("", JLabel.CENTER);
-//		
-//		JLabel label = new JLabel("", JLabel.CENTER);
-//		StringVector labelLines = new StringVector();
-//		
-//		Thread thread = null;
-//		
-//		StartupStatusDialog(String configName, Image icon) {
-//			super("GoldenGATE Editor Startup");
-//			
-//			this.configNameLabel.setText("<HTML>Configuration is <B>" + configName + "</B></HTML>");
-//			this.configNameLabel.validate();
-//			
-//			this.setIconImage(icon);
-//			this.setUndecorated(true);
-//			
-//			JPanel contentPanel = new JPanel(new BorderLayout());
-//			contentPanel.add(this.configNameLabel, BorderLayout.NORTH);
-//			contentPanel.add(this.label, BorderLayout.CENTER);
-//			
-//			Font labelFont = UIManager.getFont("Label.font");
-//			Border outer = BorderFactory.createMatteBorder(2, 3, 2, 3, Color.LIGHT_GRAY);
-//			Border inner = BorderFactory.createEtchedBorder(Color.RED, Color.DARK_GRAY);
-//			Border compound = BorderFactory.createCompoundBorder(outer, inner);
-//			contentPanel.setBorder(BorderFactory.createTitledBorder(compound, "GoldenGATE Editor Starting ...", TitledBorder.LEFT, TitledBorder.TOP, labelFont.deriveFont(Font.BOLD)));
-//			contentPanel.setBackground(Color.WHITE);
-//			
-//			this.getContentPane().setLayout(new BorderLayout());
-//			this.getContentPane().add(contentPanel, BorderLayout.CENTER);
-//			this.setSize(400, 100);
-//			this.setLocationRelativeTo(null);
-//			this.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-//		}
-//		
-//		public void addStatusLine(String line) {
-//			this.labelLines.addElement(line);
-//			while (this.labelLines.size() > 3)
-//				this.labelLines.remove(0);
-//			this.label.setText("<HTML>" + this.labelLines.concatStrings("<BR>") + "</HTML>");
-//			this.label.validate();
-//		}
-//		
-//		public void startupStarted() {
-//			if (this.thread == null) {
-//				this.thread = new Thread(this);
-//				this.thread.start();
-//				while (!this.isVisible()) try {
-//					Thread.sleep(50);
-//				} catch (InterruptedException ie) {}
-//			}
-//		}
-//		
-//		public void startupFinished() {
-//			this.dispose();
-//		}
-//		
-//		public void run() {
-//			this.setVisible(true);
-//			this.thread = null;
-//		}
-//	}
 	
-	private static final String DEFAULT_LOGFILE_DATE_FORMAT = "yyyy.MM.dd HH:mm:ss";
-	private static final DateFormat logTimestampFormatter = new SimpleDateFormat(DEFAULT_LOGFILE_DATE_FORMAT);
-	
+//	private static final String DEFAULT_LOGFILE_DATE_FORMAT = "yyyy.MM.dd HH:mm:ss";
+//	private static final DateFormat logTimestampFormatter = new SimpleDateFormat(DEFAULT_LOGFILE_DATE_FORMAT);
+//	
 	/**	write some entry to the program log
 	 * @param	entry	the text to write
 	 */
@@ -3315,28 +3239,11 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 				(new EeDialog()).setVisible(true);
 			}
 		} else this.eeCount = 0;
-		String timestamp = logTimestampFormatter.format(new Date());
-		this.configuration.writeLog(timestamp + ": " + entry);
+		System.out.println(entry);
+//		String timestamp = logTimestampFormatter.format(new Date());
+//		this.configuration.writeLog(timestamp + ": " + entry);
 	}
 	
-//	/**	write some entry to the program log
-//	 * @param	entry	the text to write
-//	 */
-//	public static void writeLog(String entry) {
-//		if ((entry != null) && entry.endsWith("Context Menu --> Rename")) {
-//			eeCount++;
-//			if (eeCount == 3) {
-//				eeCount = 0;
-//				(new EeDialog()).setVisible(true);
-//			}
-//		} else eeCount = 0;
-//		if (GOLDEN_GATE != null) {
-//			String timestamp = logTimestampFormatter.format(new Date());
-//			GOLDEN_GATE.configuration.writeLog(timestamp + ": " + entry);
-//		}
-//	}
-//	
-//	private static int eeCount = 0;
 	private int eeCount = 0;
 	private static class EeDialog extends DialogPanel {
 		private ImageTray imageTray;

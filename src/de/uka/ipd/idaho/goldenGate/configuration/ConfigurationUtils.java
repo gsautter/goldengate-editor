@@ -847,6 +847,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		for (int p = 0; p < configPaths.length; p++) {
 			if (configPaths[p].isDirectory() // can be a configuration path
 				&& !configPaths[p].getName().endsWith(".old") // is not an old configuration
+				&& !configPaths[p].getName().endsWith(".updating") // is not an incomplete download or update attempt
 				&& (new File(configPaths[p], GoldenGateConfiguration.TIMESTAMP_NAME).exists()) // timestamp exists
 			) try {
 				configurations.add(new ConfigurationDescriptor(null, configPaths[p].getName(), getTimestamp(configPaths[p])));
@@ -1469,12 +1470,12 @@ public class ConfigurationUtils implements GoldenGateConstants {
 			source.close();
 		}
 		
-		//	catch omitted empty config and text files
+		//	catch omitted empty config, text, and explanation files
 		catch (IOException ioe) {
 			if (total != 0)
 				throw ioe;
 			fileName = fileName.toLowerCase();
-			if (!fileName.endsWith(".cnfg") && !fileName.endsWith(".txt"))
+			if (!fileName.endsWith(".cnfg") && !fileName.endsWith(".txt") && !fileName.endsWith(".html"))
 				throw ioe;
 		}
 		
@@ -2423,7 +2424,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	 * @return the argument path, normalized according to the rules above
 	 */
 	public static String normalizePath(String path) {
-		path = path.replaceAll("\\\\", "/");
+		path = path.replace('\\', '/');
 		while (path.startsWith("./"))
 			path = path.substring(2);
 		while (path.startsWith("/"))

@@ -28,9 +28,7 @@
 package de.uka.ipd.idaho.goldenGate.configuration;
 
 import java.awt.Image;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -68,13 +66,8 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 	 */
 	protected final String name;
 	
-//	/**
-//	 * the GoldenGATE instance running on top of this configuration
-//	 */
-//	protected GoldenGATE ggInstance = null;
+//	private BufferedWriter logWriter = null;
 //	
-	private BufferedWriter logWriter = null;
-	
 	private GoldenGatePlugin[] plugins = null;
 	
 	/**
@@ -99,16 +92,14 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 	 */
 	protected AbstractConfiguration(String name, File logFile) {
 		this.name = name;
-		
 		this.baseDataProvider = new PluginDataProviderConfigurationBased(this);
-		
-		if (logFile != null) try {
-			if (!logFile.exists()) {
-				logFile.getParentFile().mkdirs();
-				logFile.createNewFile();
-			}
-			this.logWriter = new BufferedWriter(new FileWriter(logFile, true));
-		} catch (Exception e) {}
+//		if (logFile != null) try {
+//			if (!logFile.exists()) {
+//				logFile.getParentFile().mkdirs();
+//				logFile.createNewFile();
+//			}
+//			this.logWriter = new BufferedWriter(new FileWriter(logFile, true));
+//		} catch (Exception e) {}
 	}
 	
 	/* (non-Javadoc)
@@ -122,13 +113,14 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#writeLog(java.lang.String)
 	 */
 	public void writeLog(String entry) {
-		if (this.logWriter != null) {
-			try {
-				this.logWriter.write(entry);
-				this.logWriter.newLine();
-				this.logWriter.flush();
-			} catch (IOException e) {}
-		}
+		System.out.println(entry);
+//		if (this.logWriter != null) {
+//			try {
+//				this.logWriter.write(entry);
+//				this.logWriter.newLine();
+//				this.logWriter.flush();
+//			} catch (IOException e) {}
+//		}
 	}
 	
 	/* (non-Javadoc)
@@ -137,38 +129,6 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 	public String getName() {
 		return this.name;
 	}
-	
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#getPath()
-//	 */
-//	public String getPath() {
-//		// TO DO Auto-generated method stub
-//		return null;
-//	}
-//
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#isEditable()
-//	 */
-//	public boolean isEditable() {
-//		// TO DO Auto-generated method stub
-//		return false;
-//	}
-//
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#allowWebAccess()
-//	 */
-//	public boolean allowWebAccess() {
-//		return false;
-//	}
-//	
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#setGoldenGateInstance(de.uka.ipd.idaho.goldenGate.GoldenGATE)
-//	 */
-//	public void setGoldenGateInstance(GoldenGATE gg) throws IOException {
-//		if (this.ggInstance != null)
-//			throw new IOException("There can be only one GoldenGATE instance per configuration object.");
-//		this.ggInstance = gg;
-//	}
 	
 	/* (non-Javadoc)
 	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#isMasterConfiguration()
@@ -311,14 +271,6 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 		}
 	}
 	
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#getHelpBaseURL()
-//	 */
-//	public String getHelpBaseURL() {
-//		// TO DO Auto-generated method stub
-//		return null;
-//	}
-//
 	/* (non-Javadoc)
 	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#getIconImage()
 	 */
@@ -342,69 +294,4 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 		return this.iconImage;
 	}
 	private Image iconImage = null; // cache icon image
-
-	
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePluginDataProvider#isDataAvailable(java.lang.String)
-//	 */
-//	public boolean isDataAvailable(String dataName) {
-//		// TO DO Auto-generated method stub
-//		return false;
-//	}
-//
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePluginDataProvider#getDataNames()
-//	 */
-//	public String[] getDataNames() {
-//		// TO DO Auto-generated method stub
-//		return null;
-//	}
-//	
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePluginDataProvider#isDataEditable()
-//	 */
-//	public boolean isDataEditable() {
-//		return this.isEditable();
-//	}
-//
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePluginDataProvider#isDataEditable(java.lang.String)
-//	 */
-//	public boolean isDataEditable(String dataName) {
-//		// TO DO Auto-generated method stub
-//		return false;
-//	}
-//
-//	
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePluginDataProvider#getInputStream(java.lang.String)
-//	 */
-//	public InputStream getInputStream(String dataName) throws IOException {
-//		// TO DO Auto-generated method stub
-//		return null;
-//	}
-//
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePluginDataProvider#getURL(java.lang.String)
-//	 */
-//	public URL getURL(String dataName) throws IOException {
-//		// TO DO Auto-generated method stub
-//		return null;
-//	}
-//
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePluginDataProvider#getOutputStream(java.lang.String)
-//	 */
-//	public OutputStream getOutputStream(String dataName) throws IOException {
-//		// TO DO Auto-generated method stub
-//		return null;
-//	}
-//
-//	/* (non-Javadoc)
-//	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePluginDataProvider#deleteData(java.lang.String)
-//	 */
-//	public boolean deleteData(String dataName) {
-//		// TO DO Auto-generated method stub
-//		return false;
-//	}
 }
