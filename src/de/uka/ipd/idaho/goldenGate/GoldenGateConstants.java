@@ -228,7 +228,7 @@ public interface GoldenGateConstants {
 	public static class StatusDialog extends JFrame implements Runnable {
 		
 		/**
-		 * Button obticatlly matching the status dialog.
+		 * Button optically matching the status dialog.
 		 * 
 		 * @author sautter
 		 */

@@ -98,10 +98,10 @@ public class VersionPacker {
 	}
 	
 	private static void buildVersion(File rootFolder, String configName) throws Exception {
-		System.out.println("Building GoldenGATE version with " + ((configName == null) ? "no configuration" : (PackerUtils.LOCAL_MASTER_CONFIGURATION.equals(configName) ? configName : ("configuration '" + configName + "'"))) + ".");
+		System.out.println("Building GoldenGATE Editor version with " + ((configName == null) ? "no configuration" : (PackerUtils.LOCAL_MASTER_CONFIGURATION.equals(configName) ? configName : ("configuration '" + configName + "'"))) + ".");
 		
 		String versionZipName = getVersionZipName(configName);
-		System.out.println("Building GoldenGATE version '" + versionZipName + "'");
+		System.out.println("Building GoldenGATE Editor version '" + versionZipName + "'");
 		
 		String[] coreFileNames = getCoreFileNames(rootFolder);
 		String[] configFileNames;
@@ -135,7 +135,7 @@ public class VersionPacker {
 			File specialFile;
 			if (PackerUtils.README_FILE_NAME.equals(specialFiles[s]))
 				specialFile = new File(rootFolder, PackerUtils.README_FILE_NAME);
-			else specialFile = new File(rootFolder, ("_VersionPacker." + specialFiles[s]));
+			else specialFile = new File(rootFolder, ("_VersionPacker.editor." + specialFiles[s]));
 			PackerUtils.writeZipFileEntry(specialFile, specialFiles[s], versionZipper);
 		}
 		
@@ -152,58 +152,11 @@ public class VersionPacker {
 	private static final String getVersionZipName(String configName) {
 		return ("GoldenGATE" + ((configName == null) ? "" : (PackerUtils.LOCAL_MASTER_CONFIGURATION.equals(configName) ? "-Full" : ("-" + configName))) + ".zip");
 	}
-//	private static void buildVersion() throws Exception {
-//		File rootFolder = new File(PackerUtils.normalizePath(new File(".").getAbsolutePath()));
-//		System.out.println("Root folder is '" + rootFolder.getAbsolutePath() + "'");
-//		
-//		String configName = PackerUtils.selectConfigurationName(rootFolder, "Please select the configuration to include in the version zip file.", true);
-//		System.out.println(((configName == null) ? "No configuration" : (LOCAL_MASTER_CONFIGURATION.equals(configName) ? configName : ("Configuration '" + configName + "'"))) + " selected to be included in version.");
-//		
-//		String versionZipName = "GoldenGATE" + ((configName == null) ? "" : (LOCAL_MASTER_CONFIGURATION.equals(configName) ? "-Full" : ("-" + configName))) + ".zip";
-//		System.out.println("Building GoldenGATE version '" + versionZipName + "'");
-//		
-//		String[] coreFileNames = getCoreFileNames(rootFolder);
-//		String[] configFileNames;
-//		if (configName == null)
-//			configFileNames = new String[0];
-//		else {
-//			configFileNames = PackerUtils.getConfigFileNames(rootFolder, configName);
-//			if (!LOCAL_MASTER_CONFIGURATION.equals(configName))
-//				for (int f = 0; f < configFileNames.length; f++)
-//					configFileNames[f] = ("Configurations/" + configName + "/" + configFileNames[f]);
-//		}
-//		
-//		
-//		File versionZipFile = new File(rootFolder, ("_Zips/" + versionZipName));
-//		if (versionZipFile.exists()) {
-//			versionZipFile.renameTo(new File(rootFolder, ("_Zips/" + versionZipName + "." + System.currentTimeMillis() + ".old")));
-//			versionZipFile = new File(rootFolder, ("_Zips/" + versionZipName));
-//		}
-//		System.out.println("Creating version zip file '" + versionZipFile.getAbsolutePath() + "'");
-//		
-//		versionZipFile.getParentFile().mkdirs();
-//		versionZipFile.createNewFile();
-//		ZipOutputStream versionZipper = new ZipOutputStream(new FileOutputStream(versionZipFile));
-//		
-//		for (int s = 0; s < specialFiles.length; s++) {
-//			File specialFile = new File(rootFolder, ("_VersionPacker." + specialFiles[s]));
-//			PackerUtils.writeZipFileEntry(specialFile, specialFiles[s], versionZipper);
-//		}
-//		
-//		PackerUtils.writeZipFileEntries(rootFolder, versionZipper, coreFileNames);
-//		PackerUtils.writeZipFileEntries(rootFolder, versionZipper, configFileNames);
-//		
-//		versionZipper.flush();
-//		versionZipper.close();
-//		
-//		System.out.println("Version zip file '" + versionZipFile.getAbsolutePath() + "' created successfully.");
-//		JOptionPane.showMessageDialog(null, ("Version '" + versionZipName + "' created successfully."), "Version Created Successfully", JOptionPane.INFORMATION_MESSAGE);
-//	}
 	
 	private static String[] getCoreFileNames(File rootFolder) throws IOException {
 		Set coreFiles = new TreeSet();
 		
-		File coreFileList = new File(rootFolder, "_VersionPacker.cnfg");
+		File coreFileList = new File(rootFolder, "_VersionPacker.editor.cnfg");
 		BufferedReader br = new BufferedReader(new FileReader(coreFileList));
 		String coreFile;
 		while ((coreFile = br.readLine()) != null) {
@@ -211,6 +164,7 @@ public class VersionPacker {
 			if ((coreFile.length() != 0) && !coreFile.startsWith("//"))
 				coreFiles.add(coreFile);
 		}
+		br.close();
 		
 		for (int s = 0; s < specialFiles.length; s++)
 			coreFiles.remove(specialFiles[s]);

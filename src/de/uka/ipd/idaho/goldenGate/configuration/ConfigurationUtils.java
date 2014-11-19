@@ -1651,7 +1651,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 			
 			GoldenGatePlugin[] ggPlugins = ((GoldenGatePlugin[]) plugins.toArray(new GoldenGatePlugin[plugins.size()]));
 			for (int p = 0; p < ggPlugins.length; p++)
-				this.addPluginPanel(ggPlugins[p], null, selected, selected.contains(ggPlugins[p].getClass().getName()), true);
+				this.addPluginPanel(ggPlugins[p], ggPlugins[p].getPluginName(), selected, selected.contains(ggPlugins[p].getClass().getName()), true);
 		}
 		
 		private void addPluginPanel(GoldenGatePlugin plugin, String pluginName, StringVector selectedResources, boolean selected, boolean enabled) {

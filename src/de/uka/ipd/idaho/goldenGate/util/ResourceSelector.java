@@ -44,7 +44,7 @@ import de.uka.ipd.idaho.goldenGate.plugins.ResourceManager;
 
 /**
  * A ResourceSelector is a small widget that allows for selecting a resource
- * from its parent resource manager. In prticular, it's a JButton that displays
+ * from its parent resource manager. In particular, it's a JButton that displays
  * the name of the selected resource, or an explanation label, if no resource is
  * selected.
  * 

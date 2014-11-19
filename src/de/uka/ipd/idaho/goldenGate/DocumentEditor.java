@@ -3055,7 +3055,7 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 	 * Apply a DocumentProcessor to the document contained in this
 	 * DocumentEditor
 	 * @param processor the DocumentProcessor to apply
-	 * @param splashScreen the spash screen blocking the main editor for the
+	 * @param splashScreen the splash screen blocking the main editor for the
 	 *            time the processor is running (to allow
 	 *            DocumentProcessorManagers to provide a custom SpalshScreen for
 	 *            their specific DocumentProcessors)
@@ -3246,122 +3246,122 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 	 * @param parameters execution parameters for the annotator
 	 */
 	public void applyAnnotationSource(final AnnotationSource annotator, final ResourceSplashScreen splashScreen, final Properties parameters) {
-		if (annotator != null) {
-			
-			//	gather undo information
-			AnnotationSourceManager asm = this.host.getAnnotationSourceProvider(annotator.getProviderClassName());
-			String undoActionName;
-			if (asm == null) undoActionName = annotator.getName();
-			else undoActionName = asm.getToolsMenuLabel() + " " + asm.getResourceTypeLabel() + " (" + annotator.getName() + ")";
-			
-			//	get target
-			String targetId = parameters.getProperty(TARGET_ANNOTATION_ID);
-			MutableAnnotation targetAnnotation = null;
-			if (targetId != null) {
-				MutableAnnotation[] targetAnnotations = this.content.getMutableAnnotations();
-				for (int a = 0; a < targetAnnotations.length; a++) {
-					if (targetId.equals(targetAnnotations[a].getAnnotationID())) {
-						targetAnnotation = targetAnnotations[a];
-						a = targetAnnotations.length;
-					}
+		if (annotator == null)
+			return;
+		
+		//	gather undo information
+		AnnotationSourceManager asm = this.host.getAnnotationSourceProvider(annotator.getProviderClassName());
+		String undoActionName;
+		if (asm == null) undoActionName = annotator.getName();
+		else undoActionName = asm.getToolsMenuLabel() + " " + asm.getResourceTypeLabel() + " (" + annotator.getName() + ")";
+		
+		//	get target
+		String targetId = parameters.getProperty(TARGET_ANNOTATION_ID);
+		MutableAnnotation targetAnnotation = null;
+		if (targetId != null) {
+			MutableAnnotation[] targetAnnotations = this.content.getMutableAnnotations();
+			for (int a = 0; a < targetAnnotations.length; a++) {
+				if (targetId.equals(targetAnnotations[a].getAnnotationID())) {
+					targetAnnotation = targetAnnotations[a];
+					a = targetAnnotations.length;
 				}
 			}
-			final MutableAnnotation target = ((targetAnnotation == null) ? this.content : targetAnnotation);
-			
-			//	store undo information
-			this.enqueueRestoreMarkupUndoAction(undoActionName, target.getStartIndex(), target.size());
-			this.writeLog("Apply Annotation Source: " + undoActionName);
-			
-			//	apply processor
-			if (splashScreen != null) splashScreen.setLocationRelativeTo(DialogPanel.getTopWindow());
-			new Thread() {
-				private boolean annotationsAdded = false;
-				public void run() {
+		}
+		final MutableAnnotation target = ((targetAnnotation == null) ? this.content : targetAnnotation);
+		
+		//	store undo information
+		this.enqueueRestoreMarkupUndoAction(undoActionName, target.getStartIndex(), target.size());
+		this.writeLog("Apply Annotation Source: " + undoActionName);
+		
+		//	apply processor
+		if (splashScreen != null) splashScreen.setLocationRelativeTo(DialogPanel.getTopWindow());
+		new Thread() {
+			private boolean annotationsAdded = false;
+			public void run() {
+				if (splashScreen != null) {
+					System.out.print("DocumentEditor: popping up splashscreen ...");
+					splashScreen.popUp();
+					System.out.println(" done");
+					while (!splashScreen.isVisible()) try {
+						System.out.println("DocumentEditor: waiting for splashscreen to show ...");
+						Thread.sleep(25);
+					} catch (InterruptedException ie) {}
+				}
+				try {
+					System.out.print("DocumentEditor: start applying annotator (" + annotator.getName() + ") ...");
+					annotationModifyer = annotator;
+					notifyDisplayLocked();
+					
+					Annotation[] annotations = annotator.annotate(target, parameters);
+					if (annotations != null) {
+						
+						//	show Annotations to user
+						Window top = DialogPanel.getTopWindow();
+						AnnotationDisplayDialog add;
+						
+						if (top instanceof JDialog)
+							add = new AnnotationDisplayDialog(((JDialog) top), ("Matches of " + annotator.getTypeLabel()), annotations);
+						else if (top instanceof JFrame)
+							add = new AnnotationDisplayDialog(((JFrame) top), ("Matches of " + annotator.getTypeLabel()), annotations);
+						else add = new AnnotationDisplayDialog(((JFrame) null), ("Matches of " + annotator.getTypeLabel()), annotations);
+						
+						add.setLocationRelativeTo(top);
+						add.setVisible(true);
+						if (add.isCommitted()) {
+							
+							//	get Annotation type
+							String annotationType = JOptionPane.showInputDialog(top, "Please enter the type to add the Annotations with.", "Enter Annotation Type", JOptionPane.QUESTION_MESSAGE);
+							if (annotationType != null) {
+								
+								//	add Annotations
+								annotations = add.getSelectedAnnotations();
+								for (int a = 0; a < annotations.length; a++) {
+									annotations[a].changeTypeTo(annotationType);
+									annotations[a] = target.addAnnotation(annotations[a]);
+								}
+								this.annotationsAdded = (annotations.length != 0);
+							}
+						}
+					}
+					
+					System.out.println(" finished");
+				}
+				catch (Throwable t) {
+					System.out.println(" annotation source produced exception");
+					t.printStackTrace(System.out);
+					JOptionPane.showMessageDialog(((splashScreen == null) ? ((Component) DialogPanel.getTopWindow()) : ((Component) splashScreen)), ("Error running " + annotator.getName() + ":\n" + t.getMessage()), "Error Applying AnnotationSource", JOptionPane.ERROR_MESSAGE);
+				}
+				finally {
+					System.out.print("DocumentEditor: storing undo action ...");
+					storeUndoAction();
+					System.out.println(" done");
+					
+					contentModified = (contentModified || this.annotationsAdded);
+					annotationModifyer = null;
+					notifyDisplayUnlocked();
+					
 					if (splashScreen != null) {
-						System.out.print("DocumentEditor: popping up splashscreen ...");
-						splashScreen.popUp();
-						System.out.println(" done");
 						while (!splashScreen.isVisible()) try {
 							System.out.println("DocumentEditor: waiting for splashscreen to show ...");
 							Thread.sleep(25);
 						} catch (InterruptedException ie) {}
-					}
-					try {
-						System.out.print("DocumentEditor: start applying annotator (" + annotator.getName() + ") ...");
-						annotationModifyer = annotator;
-						notifyDisplayLocked();
-						
-						Annotation[] annotations = annotator.annotate(target, parameters);
-						if (annotations != null) {
-							
-							//	show Annotations to user
-							Window top = DialogPanel.getTopWindow();
-							AnnotationDisplayDialog add;
-							
-							if (top instanceof JDialog)
-								add = new AnnotationDisplayDialog(((JDialog) top), ("Matches of " + annotator.getTypeLabel()), annotations);
-							else if (top instanceof JFrame)
-								add = new AnnotationDisplayDialog(((JFrame) top), ("Matches of " + annotator.getTypeLabel()), annotations);
-							else add = new AnnotationDisplayDialog(((JFrame) null), ("Matches of " + annotator.getTypeLabel()), annotations);
-							
-							add.setLocationRelativeTo(top);
-							add.setVisible(true);
-							if (add.isCommitted()) {
-								
-								//	get Annotation type
-								String annotationType = JOptionPane.showInputDialog(top, "Please enter the type to add the Annotations with.", "Enter Annotation Type", JOptionPane.QUESTION_MESSAGE);
-								if (annotationType != null) {
-									
-									//	add Annotations
-									annotations = add.getSelectedAnnotations();
-									for (int a = 0; a < annotations.length; a++) {
-										annotations[a].changeTypeTo(annotationType);
-										annotations[a] = target.addAnnotation(annotations[a]);
-									}
-									this.annotationsAdded = (annotations.length != 0);
-								}
-							}
-						}
-						
-						System.out.println(" finished");
-					}
-					catch (Throwable t) {
-						System.out.println(" annotation source produced exception");
-						t.printStackTrace(System.out);
-						JOptionPane.showMessageDialog(((splashScreen == null) ? ((Component) DialogPanel.getTopWindow()) : ((Component) splashScreen)), ("Error running " + annotator.getName() + ":\n" + t.getMessage()), "Error Applying AnnotationSource", JOptionPane.ERROR_MESSAGE);
-					}
-					finally {
-						System.out.print("DocumentEditor: storing undo action ...");
-						storeUndoAction();
+						System.out.print("DocumentEditor: disposing splashscreen ...");
+						splashScreen.dispose();
 						System.out.println(" done");
-						
-						contentModified = (contentModified || this.annotationsAdded);
-						annotationModifyer = null;
-						notifyDisplayUnlocked();
-						
-						if (splashScreen != null) {
-							while (!splashScreen.isVisible()) try {
-								System.out.println("DocumentEditor: waiting for splashscreen to show ...");
-								Thread.sleep(25);
-							} catch (InterruptedException ie) {}
-							System.out.print("DocumentEditor: disposing splashscreen ...");
-							splashScreen.dispose();
-							System.out.println(" done");
-						}
-						
-						//	TODO: create refreshHighlightSpans() method and avoid full refresh if tags not visible
-						if (this.annotationsAdded)
-							SwingUtilities.invokeLater(new Runnable() {
-								public void run() {
-									System.out.print("DocumentEditor: refreshing display ...");
-									refreshDisplay();
-									System.out.println(" done");
-								}
-							});
 					}
+					
+					//	TODO: create refreshHighlightSpans() method and avoid full refresh if tags not visible
+					if (this.annotationsAdded)
+						SwingUtilities.invokeLater(new Runnable() {
+							public void run() {
+								System.out.print("DocumentEditor: refreshing display ...");
+								refreshDisplay();
+								System.out.println(" done");
+							}
+						});
 				}
-			}.start();
-		}
+			}
+		}.start();
 	}
 	
 	/**	make this DocumentEditor show a custom view of its content document

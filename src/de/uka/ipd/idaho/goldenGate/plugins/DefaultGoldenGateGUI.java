@@ -206,26 +206,13 @@ public class DefaultGoldenGateGUI extends JFrame implements GoldenGateGUI {
 		//	take control of window
 		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		this.addWindowListener(new WindowAdapter() {
-//			private boolean exiting = false;
-//			public void windowClosing(WindowEvent e) {
-//				if (!this.exiting) {
-//					this.exiting = true;
-//					parent.exitShutdown();
-//				}
-//			}
-//			public void windowClosed(WindowEvent e) {
-//				if (!this.exiting) {
-//					this.exiting = true;
-//					parent.exitShutdown();
-//				}
-//			}
-			public void windowClosing(WindowEvent e) {
+			public void windowClosing(WindowEvent we) {
 				if (!exiting) {
 					exiting = true;
 					parent.exitShutdown();
 				}
 			}
-			public void windowClosed(WindowEvent e) {
+			public void windowClosed(WindowEvent we) {
 				if (!exiting) {
 					exiting = true;
 					parent.exitShutdown();

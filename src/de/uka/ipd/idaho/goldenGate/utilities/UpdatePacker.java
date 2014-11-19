@@ -105,7 +105,7 @@ public class UpdatePacker {
 		File updateFolder = new File(rootFolder, "_Updates/");
 		File[] updateFiles = updateFolder.listFiles(new FileFilter() {
 			public boolean accept(File file) {
-				return (file.isFile() && file.getName().endsWith(".zip"));
+				return (file.isFile() && file.getName().endsWith(".zip") && file.getName().startsWith("GgUpdate.V3."));
 			}
 		});
 		

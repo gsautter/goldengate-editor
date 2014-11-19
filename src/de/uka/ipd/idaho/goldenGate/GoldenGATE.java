@@ -130,7 +130,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 * editing settings, etc.; these all go to GoldenGateEditor)
 	 * 
 	 * ==> DO NOT DO THIS: provides no advantage because GG has to remain a
-	 * singleton anyways due to static fields plugins
+	 * singleton (folderton) anyways due to static fields in plugins
 	 */
 	
 	private static final SimpleDateFormat yearTimestamper = new SimpleDateFormat("yyyy");
@@ -3007,14 +3007,14 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	/**
-	 * @return the name of the configuration wrapped in this GoldenGATE instace
+	 * @return the name of the configuration wrapped in this GoldenGATE instance
 	 */
 	public String getConfigurationName() {
 		return ((this.configuration == null) ? null : this.configuration.getName());
 	}
 	
 	/**
-	 * @return the path of the configuration wrapped in this GoldenGATE instace,
+	 * @return the path of the configuration wrapped in this GoldenGATE instance,
 	 *         relative to the root path of the surrounding GoldenGATE
 	 *         installation
 	 */

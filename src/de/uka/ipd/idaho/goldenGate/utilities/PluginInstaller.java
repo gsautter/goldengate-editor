@@ -118,6 +118,7 @@ public class PluginInstaller {
 				}
 				ignoreFileNames.add(Pattern.compile(ifnRegEx.toString(), Pattern.CASE_INSENSITIVE));
 			}
+			ifnBr.close();
 		} catch (IOException ioe) {}
 		
 		//	unzip components

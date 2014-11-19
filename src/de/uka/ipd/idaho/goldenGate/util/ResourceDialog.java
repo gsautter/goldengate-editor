@@ -56,7 +56,7 @@ import de.uka.ipd.idaho.goldenGate.plugins.ResourceManager;
 public class ResourceDialog extends JDialog {
 	
 	/**
-	 * Create a new resource dialog modal to the currently focussed window
+	 * Create a new resource dialog modal to the currently focused window
 	 * @param parent the ResourceManager providing the DocumentProcessors to be
 	 *            selectable for application
 	 * @param title the title for the dialog window
@@ -66,7 +66,7 @@ public class ResourceDialog extends JDialog {
 	}
 
 	/**
-	 * Create a new resource dialog modal to the currently focussed window
+	 * Create a new resource dialog modal to the currently focused window
 	 * @param resourceNames the resource names to offer for selection
 	 * @param title the title for the dialog window
 	 */
@@ -75,7 +75,7 @@ public class ResourceDialog extends JDialog {
 	}
 
 	/**
-	 * Create a new resource dialog modal to the currently focussed window
+	 * Create a new resource dialog modal to the currently focused window
 	 * @param parent the ResourceManager providing the DocumentProcessors to be
 	 *            selectable for application
 	 * @param title the title for the dialog window
@@ -86,7 +86,7 @@ public class ResourceDialog extends JDialog {
 	}
 
 	/**
-	 * Create a new resource dialog modal to the currently focussed window
+	 * Create a new resource dialog modal to the currently focused window
 	 * @param resourceNames the resource names to offer for selection
 	 * @param title the title for the dialog window
 	 * @param commitButtonLabel the label String for the apply button
@@ -96,7 +96,7 @@ public class ResourceDialog extends JDialog {
 	}
 
 	/**
-	 * Create a new resource dialog modal to the currently focussed window
+	 * Create a new resource dialog modal to the currently focused window
 	 * @param parent the ResourceManager providing the DocumentProcessors to be
 	 *            selectable for application
 	 * @param title the title for the dialog window
@@ -109,7 +109,7 @@ public class ResourceDialog extends JDialog {
 	}
 
 	/**
-	 * Create a new resource dialog modal to the currently focussed window
+	 * Create a new resource dialog modal to the currently focused window
 	 * @param resourceNames the resource names to offer for selection
 	 * @param title the title for the dialog window
 	 * @param commitButtonLabel the label String for the apply button
