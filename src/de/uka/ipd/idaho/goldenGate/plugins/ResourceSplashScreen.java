@@ -35,12 +35,14 @@ import java.awt.Window;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.SwingUtilities;
 
 import de.uka.ipd.idaho.gamta.util.ControllingProgressMonitor;
 import de.uka.ipd.idaho.gamta.util.swing.ProgressMonitorPanel;
+import de.uka.ipd.idaho.gamta.util.swing.ProgressMonitorWindow;
 import de.uka.ipd.idaho.goldenGate.util.DialogPanel;
 
-public class ResourceSplashScreen extends DialogPanel implements ControllingProgressMonitor {
+public class ResourceSplashScreen extends DialogPanel implements ControllingProgressMonitor, ProgressMonitorWindow {
 	private JLabel textLabel = new JLabel("Please wait while GoldenGATE Resource is running ...", JLabel.LEFT);
 	private ProgressMonitorPanel pmp;
 	
@@ -156,22 +158,67 @@ public class ResourceSplashScreen extends DialogPanel implements ControllingProg
 	 * be done by the event dispatch thread.
 	 */
 	public void popUp() {
-		Thread t = new SplashScreenThread(this);
-		t.start();
+//		Thread t = new SplashScreenThread(this);
+//		t.start();
+		this.popUp(false);
 	}
 	
-	/**
-	 * Thread for displaying the modal splash screen without blocking program
-	 * execution.
+	/* (non-Javadoc)
+	 * @see de.uka.ipd.idaho.gamta.util.swing.ProgressMonitorWindow#getWindow()
 	 */
-	private static class SplashScreenThread extends Thread {
-		private ResourceSplashScreen splashScreen;
-		private SplashScreenThread(ResourceSplashScreen splashScreen) {
-			this.splashScreen = splashScreen;
-		}
-		public void run() {
-			System.out.println("SplashScreenThread: showing splash screen");
-			this.splashScreen.setVisible(true);
+	public Window getWindow() {
+		return this.getDialog();
+	}
+	
+	/* (non-Javadoc)
+	 * @see de.uka.ipd.idaho.gamta.util.swing.ProgressMonitorWindow#getSubWindow(java.awt.Window, java.lang.String, boolean, boolean)
+	 */
+	public ProgressMonitorWindow getSubWindow(Window topWindow, String title, boolean supportPauseResume, boolean supportAbort) {
+		return new ResourceSplashScreen(topWindow, title, "", supportPauseResume, supportAbort);
+	}
+	
+	/* (non-Javadoc)
+	 * @see de.uka.ipd.idaho.gamta.util.swing.ProgressMonitorWindow#popUp(boolean)
+	 */
+	public void popUp(boolean block) {
+		if (this.isVisible())
+			return;
+		if (block)
+			this.setVisible(true);
+		else {
+			Thread put = new Thread() {
+				public void run() {
+					setVisible(true);
+				}
+			};
+			put.start();
+			if (SwingUtilities.isEventDispatchThread())
+				return;
+			while (!this.isVisible()) try {
+				Thread.sleep(100);
+			} catch (InterruptedException ie) {}
 		}
 	}
+	
+	/* (non-Javadoc)
+	 * @see de.uka.ipd.idaho.gamta.util.swing.ProgressMonitorWindow#close()
+	 */
+	public void close() {
+		this.dispose();
+	}
+//	
+//	/**
+//	 * Thread for displaying the modal splash screen without blocking program
+//	 * execution.
+//	 */
+//	private static class SplashScreenThread extends Thread {
+//		private ResourceSplashScreen splashScreen;
+//		private SplashScreenThread(ResourceSplashScreen splashScreen) {
+//			this.splashScreen = splashScreen;
+//		}
+//		public void run() {
+//			System.out.println("SplashScreenThread: showing splash screen");
+//			this.splashScreen.setVisible(true);
+//		}
+//	}
 }

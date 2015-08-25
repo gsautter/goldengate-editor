@@ -549,8 +549,8 @@ public class FileConfiguration extends AbstractConfiguration {
 			return new File(this.basePath, DOCUMENTATION_FOLDER_NAME).toURL().toString();
 		}
 		catch (MalformedURLException e) {
-			return new File(this.basePath, DOCUMENTATION_FOLDER_NAME).toString();
-		} 
+			return new File(this.basePath, DOCUMENTATION_FOLDER_NAME).getAbsolutePath().replace('\\', '/');
+		}
 	}
 	
 	/* (non-Javadoc)

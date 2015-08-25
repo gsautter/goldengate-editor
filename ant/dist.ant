@@ -12,8 +12,16 @@
 	<target name="editor">
 		<delete file="${jar.editor}" />
 		<jar destfile="${jar.editor}" manifest="${file.home}/MANIFEST.editor.MF">
-			<fileset dir="${build.home}/classes" includes="**/**.class" excludes="**/utilities/**.class"/>
-			<fileset dir="${src.home}" includes="**/**.java" excludes="**/utilities/**.java"/>
+			<fileset dir="${build.home}/classes">
+				<include name="**/**.class" />
+				<exclude name="**/utilities/**.class" />
+				<exclude name="**/starter/**.class" />
+			</fileset>
+			<fileset dir="${src.home}">
+				<include name="**/**.java" />
+				<exclude name="**/utilities/**.java" />
+				<exclude name="**/starter/**.java" />
+			</fileset>
 			<fileset dir="." includes="LICENSE.txt"/>
 		</jar>
 	</target>

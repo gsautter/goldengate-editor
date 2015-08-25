@@ -371,7 +371,7 @@ public class GoldenGateApplication implements GoldenGateConstants {
 				GoldenGateConfiguration ggConfiguration = null;
 				
 				//	local master configuration selected
-				if (MASTER_CONFIG_NAME.equals(configuration.name))
+				if (LOCAL_MASTER_CONFIG_NAME.equals(configuration.name))
 					ggConfiguration = new FileConfiguration(configuration.name, BASE_PATH, true, ONLINE, null);
 				
 				//	other local configuration selected
@@ -435,8 +435,6 @@ public class GoldenGateApplication implements GoldenGateConstants {
 		System.exit(0);
 	}
 	
-	private static final String MASTER_CONFIG_NAME = "Local Master Configuration";
-	
 	private static ConfigurationDescriptor selectConfiguration(ConfigurationDescriptor[] configurations, File dataBasePath) {
 		
 		//	show selection dialog
@@ -468,7 +466,7 @@ public class GoldenGateApplication implements GoldenGateConstants {
 		sd.setStatusLabel("- installed/available locally");
 		
 		//	add local default configuration
-		ConfigurationDescriptor defaultConfig = new ConfigurationDescriptor(null, MASTER_CONFIG_NAME, System.currentTimeMillis());
+		ConfigurationDescriptor defaultConfig = new ConfigurationDescriptor(null, LOCAL_MASTER_CONFIG_NAME, System.currentTimeMillis());
 		configList.add(defaultConfig);
 		
 		//	load local non-default configurations
@@ -635,7 +633,7 @@ public class GoldenGateApplication implements GoldenGateConstants {
 			configList.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 				public void valueChanged(ListSelectionEvent lse) {
 					int index = configList.getSelectedRow();
-					makeMasterConfigButton.setEnabled(!MASTER_CONFIG_NAME.equals(SelectConfigurationDialog.this.configs[index].name));
+					makeMasterConfigButton.setEnabled(!LOCAL_MASTER_CONFIG_NAME.equals(SelectConfigurationDialog.this.configs[index].name));
 				}
 			});
 			
@@ -822,7 +820,7 @@ public class GoldenGateApplication implements GoldenGateConstants {
 			ConfigurationDescriptor masterConfig = null;
 			int masterConfigIndex = -1;
 			for (int c = 0; c < this.configs.length; c++)
-				if (MASTER_CONFIG_NAME.equals(this.configs[c].name)) {
+				if (LOCAL_MASTER_CONFIG_NAME.equals(this.configs[c].name)) {
 					masterConfig = this.configs[c];
 					masterConfigIndex = c;
 					break;
@@ -842,19 +840,19 @@ public class GoldenGateApplication implements GoldenGateConstants {
 			
 			//	local master configuration already exists, offer merging selected config into it
 			if (masterConfigPluginJars.length != 0) {
-				int choice = JOptionPane.showConfirmDialog(this, ("It seems as if there is already a " + MASTER_CONFIG_NAME + " in this GoldenGATE Editor installation." +
-						"\nIf you choose to proceed, " + config.name + " will be merged into this existing " + MASTER_CONFIG_NAME + "," +
-						"\nupdating any files that are more recent in the former. Do you wish to proceed?"), (MASTER_CONFIG_NAME + " Already Exists"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+				int choice = JOptionPane.showConfirmDialog(this, ("It seems as if there is already a " + LOCAL_MASTER_CONFIG_NAME + " in this GoldenGATE Editor installation." +
+						"\nIf you choose to proceed, " + config.name + " will be merged into this existing " + LOCAL_MASTER_CONFIG_NAME + "," +
+						"\nupdating any files that are more recent in the former. Do you wish to proceed?"), (LOCAL_MASTER_CONFIG_NAME + " Already Exists"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 				if (choice != JOptionPane.OK_OPTION)
 					return -1;
 			}
 			
 			//	inform about implications of loca master configuration
-			else JOptionPane.showMessageDialog(this, ("Copying " + config.name + " as your " + MASTER_CONFIG_NAME + " in this GoldenGATE Editor installation implies the following:" +
-					"\n1. You can freely modify any resources contained in the " + MASTER_CONFIG_NAME + ", and add new ones." +
+			else JOptionPane.showMessageDialog(this, ("Copying " + config.name + " as your " + LOCAL_MASTER_CONFIG_NAME + " in this GoldenGATE Editor installation implies the following:" +
+					"\n1. You can freely modify any resources contained in the " + LOCAL_MASTER_CONFIG_NAME + ", and add new ones." +
 					"\n2. The resources copied from " + config.name + " configuration are decoupled from automated updates." +
 					"\n3. Neither of 1 and 2 affect the resources in the original " + config.name + " configuration," +
-					"\n   only their copies aded to your " + MASTER_CONFIG_NAME + "."), (MASTER_CONFIG_NAME + " Restrictions"), JOptionPane.INFORMATION_MESSAGE);
+					"\n   only their copies aded to your " + LOCAL_MASTER_CONFIG_NAME + "."), (LOCAL_MASTER_CONFIG_NAME + " Restrictions"), JOptionPane.INFORMATION_MESSAGE);
 			
 			//	copy files
 			try {
@@ -863,8 +861,8 @@ public class GoldenGateApplication implements GoldenGateConstants {
 			catch (IOException ioe) {
 				System.out.println("Error updating master configuration: " + ioe.getMessage());
 				ioe.printStackTrace(System.out);
-				JOptionPane.showMessageDialog(this, ("An error occurred while copying " + config.name + " as your " + MASTER_CONFIG_NAME + ":" +
-						"\n:" + ioe.getMessage()), (MASTER_CONFIG_NAME + " Update Error"), JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(this, ("An error occurred while copying " + config.name + " as your " + LOCAL_MASTER_CONFIG_NAME + ":" +
+						"\n:" + ioe.getMessage()), (LOCAL_MASTER_CONFIG_NAME + " Update Error"), JOptionPane.ERROR_MESSAGE);
 			}
 			
 			//	indicate where the updated configuration is
@@ -874,7 +872,7 @@ public class GoldenGateApplication implements GoldenGateConstants {
 		private void updateMasterConfig(File source, File target) throws IOException {
 			
 			//	create progress monitor
-			final ProgressMonitorDialog pmd = new ProgressMonitorDialog(this, ("Updating " + MASTER_CONFIG_NAME + " ..."));
+			final ProgressMonitorDialog pmd = new ProgressMonitorDialog(this, ("Updating " + LOCAL_MASTER_CONFIG_NAME + " ..."));
 			pmd.setSize(new Dimension(700, 120));
 			pmd.popUp(false);
 			

@@ -32,9 +32,6 @@ import java.awt.Component;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -43,6 +40,7 @@ import javax.swing.JPopupMenu;
 
 import de.uka.ipd.idaho.easyIO.help.HelpChapter;
 import de.uka.ipd.idaho.goldenGate.GoldenGATE;
+import de.uka.ipd.idaho.goldenGate.util.HelpChapterDataProviderBased;
 
 /**
  * Abstract implementetion of a GoldenGATE plugin. This class provides
@@ -218,7 +216,7 @@ public abstract class AbstractGoldenGatePlugin implements GoldenGatePlugin {
 		JMenuItem mi = new JMenuItem("Help on " + this.getPluginName());
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
-				parent.help(getPluginName());
+				parent.showHelp(getPluginName());
 			}
 		});
 		return mi;
@@ -236,30 +234,7 @@ public abstract class AbstractGoldenGatePlugin implements GoldenGatePlugin {
 	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePlugin#getHelp()
 	 */
 	public HelpChapter getHelp() {
-		//	check if help file exists
-		if (this.dataProvider.isDataAvailable(HELP_FILE_NAME)) {
-			
-			//	if so, use dynamic help loaded from file
-			return new HelpChapter(this.getPluginName(), "<HTML>The content of this chapter will be loaded from<BR><TT>" + HELP_FILE_NAME.toString() + "</TT><BR>on demand.</HTML>") {
-				public Reader getTextReader() {
-					try {
-						return new InputStreamReader(dataProvider.getInputStream(HELP_FILE_NAME));
-					}
-					catch (IOException e) {
-						return super.getTextReader();
-					}
-				}
-			};
-		}
-		
-		//	help file does not exist, use fallback error text
-		else {
-			String help = ("<html><body>" +
-					"<h3><font face=\"Verdana\">" + this.getPluginName() + "</font></h3>" +
-					"<font face=\"Verdana\" size=\"2\">Help on " + this.getPluginName() + " is not available, please contact your administrator.</font>" +
-					"</body></html>");
-			return new HelpChapter(this.getPluginName(), help);
-		}
+		return new HelpChapterDataProviderBased(this.getPluginName(), this.dataProvider);
 	}
 	
 	/**

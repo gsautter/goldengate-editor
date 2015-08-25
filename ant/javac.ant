@@ -13,14 +13,6 @@
 	    <fileset dir="${lib.home}">
 	        <include name="*.jar" />
 	    </fileset>
-		<!-- include all .jar in the idaho-core/dist/ directory -->
-	    <fileset dir="${core.dist.home}">
-	        <include name="*.jar" />
-	    </fileset>
-		<!-- include all .jar in the idaho-core/lib/ directory -->
-	    <fileset dir="${core.lib.home}">
-	        <include name="*.jar" />
-	    </fileset>
 	</path>
 	
 	<!-- The task off all tasks -->

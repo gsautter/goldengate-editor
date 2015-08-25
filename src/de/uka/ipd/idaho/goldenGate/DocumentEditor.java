@@ -64,6 +64,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -132,10 +133,10 @@ import de.uka.ipd.idaho.gamta.CharSequenceListener;
 import de.uka.ipd.idaho.gamta.DocumentRoot;
 import de.uka.ipd.idaho.gamta.Gamta;
 import de.uka.ipd.idaho.gamta.MutableAnnotation;
+import de.uka.ipd.idaho.gamta.MutableCharSequence.CharSequenceEvent;
 import de.uka.ipd.idaho.gamta.MutableTokenSequence;
 import de.uka.ipd.idaho.gamta.QueriableAnnotation;
 import de.uka.ipd.idaho.gamta.Token;
-import de.uka.ipd.idaho.gamta.MutableCharSequence.CharSequenceEvent;
 import de.uka.ipd.idaho.gamta.util.ImmutableAnnotation;
 import de.uka.ipd.idaho.gamta.util.swing.AnnotationDisplayDialog;
 import de.uka.ipd.idaho.goldenGate.observers.AnnotationObserver;
@@ -1714,7 +1715,10 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 		
 		//	get annotations from both original content and working copy
 		Annotation[] originalAnnotations = this.originalContent.getAnnotations();
+		Arrays.sort(originalAnnotations, writeThroughAnnotationOrder);
 		Annotation[] annotations = this.content.getAnnotations();
+		Arrays.sort(annotations, writeThroughAnnotationOrder);
+		if (DEBUG_WRITETHROUGH) System.out.println(" - sorted " + originalAnnotations.length + " original annotations and " + annotations.length + " current ones");
 		
 		//	sort out annotations that didn't change
 		int oai = 0;
@@ -1763,6 +1767,15 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 			}
 		}
 	}
+	
+	private static final Comparator writeThroughAnnotationOrder = new Comparator() {
+		public int compare(Object o1, Object o2) {
+			Annotation a1 = ((Annotation) o1);
+			Annotation a2 = ((Annotation) o2);
+			int c = AnnotationUtils.compare(a1, a2);
+			return ((c == 0) ? a1.getType().compareTo(a2.getType()) : c);
+		}
+	};
 	
 	/**	Representation of undo actions
 	 */

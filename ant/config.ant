@@ -44,7 +44,7 @@
 	<property name="jar.starter" value="${dist.home}/GoldenGateStarter.jar" />
 	
 	<!-- path to the .jar file that shall be created -->
-	<property name="jar.vpacker" value="${dist.home}/_VersionPacker.jar" />
+	<property name="jar.vpacker" value="${dist.home}/_VersionPacker.editor.jar" />
 	
 	<!-- path to the .jar file that shall be created -->
 	<property name="jar.cpacker" value="${dist.home}/_ConfigurationPacker.jar" />
@@ -56,7 +56,7 @@
 	<property name="app.editor" value="${dist.home}/GoldenGATE.zip" />
 	
 	<!-- path to the application .zip file that shall be created -->
-	<property name="app.vpacker" value="${dist.home}/VersionPacker.zip" />
+	<property name="app.vpacker" value="${dist.home}/VersionPacker.editor.zip" />
 	
 	<!-- path to the application .zip file that shall be created -->
 	<property name="app.cpacker" value="${dist.home}/ConfigurationPacker.zip" />

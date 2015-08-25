@@ -122,6 +122,9 @@ public interface GoldenGateConstants {
 	/** the name of the folder containing the configurations available locally */
 	public static final String CONFIG_FOLDER_NAME = "Configurations";
 	
+	/** the name of the Local Master Configuration */
+	public static final String LOCAL_MASTER_CONFIG_NAME = "Local Master Configuration";
+
 	
 	/** the name of the setting holding the initial memory for the Java VM */
 	public static final String START_MEMORY_NAME = "START_MEMORY";

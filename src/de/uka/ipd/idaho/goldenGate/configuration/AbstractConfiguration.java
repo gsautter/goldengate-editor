@@ -272,6 +272,13 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 	}
 	
 	/* (non-Javadoc)
+	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#getHelpDataProvider()
+	 */
+	public GoldenGatePluginDataProvider getHelpDataProvider() {
+		return new PluginDataProviderPrefixBased(new PluginDataProviderConfigurationBased(this), DOCUMENTATION_FOLDER_NAME);
+	}
+	
+	/* (non-Javadoc)
 	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#getIconImage()
 	 */
 	public Image getIconImage() {

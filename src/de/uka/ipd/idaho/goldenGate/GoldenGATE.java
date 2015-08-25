@@ -49,7 +49,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -78,7 +77,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 
-import de.uka.ipd.idaho.easyIO.help.DynamicHelpChapter;
 import de.uka.ipd.idaho.easyIO.help.Help;
 import de.uka.ipd.idaho.easyIO.help.HelpChapter;
 import de.uka.ipd.idaho.easyIO.settings.Settings;
@@ -110,10 +108,12 @@ import de.uka.ipd.idaho.goldenGate.plugins.DocumentSaveOperation;
 import de.uka.ipd.idaho.goldenGate.plugins.DocumentSaver;
 import de.uka.ipd.idaho.goldenGate.plugins.DocumentViewer;
 import de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePlugin;
+import de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePluginDataProvider;
 import de.uka.ipd.idaho.goldenGate.plugins.Resource;
 import de.uka.ipd.idaho.goldenGate.plugins.ResourceManager;
 import de.uka.ipd.idaho.goldenGate.plugins.SettingsPanel;
 import de.uka.ipd.idaho.goldenGate.util.DialogPanel;
+import de.uka.ipd.idaho.goldenGate.util.HelpChapterDataProviderBased;
 import de.uka.ipd.idaho.goldenGate.util.ResourceDialog;
 import de.uka.ipd.idaho.stringUtils.StringVector;
 
@@ -286,7 +286,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			}
 		}.start();
 		
-		//	build helb only if not headless
+		//	build help only if not headless
 		if (GraphicsEnvironment.isHeadless())
 			ssm.addStatusLine("Cannot create help due to headless environment");
 		
@@ -294,12 +294,11 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 			
 			//	create help menu & content
 			ssm.addStatusLine("Creating help menu ...");
-			this.helpContent = this.buildHelp(this.configuration.getHelpBaseURL());
+			this.helpContent = this.buildHelp();
 			
 			//	initialize help window 
 			ssm.addStatusLine("Creating help window ...");
-			this.help = new Help("GoldenGATE", this.helpContent, this.configuration.getHelpBaseURL());
-			this.help.setIconImage(this.iconImage);
+			this.help = new Help("GoldenGATE", this.helpContent, this.iconImage);
 		}
 		
 		//	set icon
@@ -937,7 +936,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		mi = new JMenuItem("Help on GoldenGATE");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
-				help(null);
+				showHelp(null);
 			}
 		});
 		helpMenu.add(mi);
@@ -945,7 +944,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		mi = new JMenuItem("Help on File Menu");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
-				help("File");
+				showHelp("File");
 			}
 		});
 		helpMenu.add(mi);
@@ -953,7 +952,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		mi = new JMenuItem("Help on View Menu");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
-				help("View");
+				showHelp("View");
 			}
 		});
 		helpMenu.add(mi);
@@ -961,7 +960,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		mi = new JMenuItem("Help on Edit Menu");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
-				help("Edit");
+				showHelp("Edit");
 			}
 		});
 		helpMenu.add(mi);
@@ -969,7 +968,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		mi = new JMenuItem("Help on Tools Menu");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
-				help("Tools");
+				showHelp("Tools");
 			}
 		});
 		helpMenu.add(mi);
@@ -1028,7 +1027,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 								mi = new JMenuItem("Help on '" + customFunction.label + "'");
 								mi.addActionListener(new ActionListener() {
 									public void actionPerformed(ActionEvent ae) {
-										help(customFunction.label);
+										showHelp(customFunction.label);
 									}
 								});
 								customHelpMi.add(mi);
@@ -1048,7 +1047,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 								mi = new JMenuItem("Help on '" + customShortcut.getHelpLabel() + "'");
 								mi.addActionListener(new ActionListener() {
 									public void actionPerformed(ActionEvent ae) {
-										help(customShortcut.getHelpLabel());
+										showHelp(customShortcut.getHelpLabel());
 									}
 								});
 								customHelpMi.add(mi);
@@ -1076,7 +1075,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		mi = new JMenuItem("Help");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
-				help("");
+				showHelp("");
 			}
 		});
 		helpMenu.add(mi);
@@ -1084,7 +1083,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		mi = new JMenuItem("About");
 		mi.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
-				about();
+				showAbout();
 			}
 		});
 		helpMenu.add(mi);
@@ -1102,34 +1101,36 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		}
 	}
 	
-	private HelpChapter buildHelp(String dataBaseUrl) {
-		if (!dataBaseUrl.endsWith("/")) dataBaseUrl += "/";
+	private HelpChapter buildHelp() {
+		GoldenGatePluginDataProvider helpDataProvider = this.configuration.getHelpDataProvider();
 		
-		HelpChapter helpRoot = new DynamicHelpChapter("GoldenGATE", (dataBaseUrl + "GoldenGATE.html"));
-		helpRoot.addSubChapter(new DynamicHelpChapter("Glossary",(dataBaseUrl + "Glossary.html")));
+		HelpChapter helpRoot = new HelpChapterDataProviderBased("GoldenGATE", helpDataProvider, "GoldenGATE.html");
+		helpRoot.addSubChapter(new HelpChapterDataProviderBased("Glossary", helpDataProvider, "Glossary.html"));
 		
-		HelpChapter menuHelp = new DynamicHelpChapter("Main Menus", (dataBaseUrl + "MainMenus.html"));
-		menuHelp.addSubChapter(new DynamicHelpChapter("File", (dataBaseUrl + "FileMenu.html")));
-		menuHelp.addSubChapter(new DynamicHelpChapter("View", (dataBaseUrl + "ViewMenu.html")));
-		menuHelp.addSubChapter(new DynamicHelpChapter("Edit", (dataBaseUrl + "EditMenu.html")));
-		menuHelp.addSubChapter(new DynamicHelpChapter("Tools", (dataBaseUrl + "ToolsMenu.html")));
+		HelpChapter menuHelp = new HelpChapterDataProviderBased("Main Menus", helpDataProvider, "MainMenus.html");
+		menuHelp.addSubChapter(new HelpChapterDataProviderBased("File", helpDataProvider, "FileMenu.html"));
+		menuHelp.addSubChapter(new HelpChapterDataProviderBased("View", helpDataProvider, "ViewMenu.html"));
+		menuHelp.addSubChapter(new HelpChapterDataProviderBased("Edit", helpDataProvider, "EditMenu.html"));
+		menuHelp.addSubChapter(new HelpChapterDataProviderBased("Tools", helpDataProvider, "ToolsMenu.html"));
 		if (this.configuration.isMasterConfiguration())
-			menuHelp.addSubChapter(new DynamicHelpChapter("Window", (dataBaseUrl + "WindowMenu.html")));
-		menuHelp.addSubChapter(new DynamicHelpChapter("Help", (dataBaseUrl + "HelpMenu.html")));
+			menuHelp.addSubChapter(new HelpChapterDataProviderBased("Window", helpDataProvider, "WindowMenu.html"));
+		menuHelp.addSubChapter(new HelpChapterDataProviderBased("Help", helpDataProvider, "HelpMenu.html"));
 		helpRoot.addSubChapter(menuHelp);
 		
-		helpRoot.addSubChapter(DocumentEditor.getHelp(dataBaseUrl));
+		HelpChapter docEditorHelp = new HelpChapterDataProviderBased("Document Editor", helpDataProvider, "DocumentEditor.html");
+		helpRoot.addSubChapter(docEditorHelp);
+		docEditorHelp.addSubChapter(new HelpChapterDataProviderBased("Annotation Editor", helpDataProvider, "AnnotationEditor.html"));
 		
-		HelpChapter helpDocumentIo = new DynamicHelpChapter("Document IO", (dataBaseUrl + "DocumentIO.html"));
+		HelpChapter helpDocumentIo = new HelpChapterDataProviderBased("Document IO", helpDataProvider, "DocumentIO.html");
 		helpRoot.addSubChapter(helpDocumentIo);
 		
-		HelpChapter helpDocumentFormats = new DynamicHelpChapter("Document Formats", (dataBaseUrl + "DocumentFormats.html"));
+		HelpChapter helpDocumentFormats = new HelpChapterDataProviderBased("Document Formats", helpDataProvider, "DocumentFormats.html");
 		helpRoot.addSubChapter(helpDocumentFormats);
 		
-		HelpChapter helpDocumentViewers = new DynamicHelpChapter("Document Viewers", (dataBaseUrl + "DocumentViewers.html"));
+		HelpChapter helpDocumentViewers = new HelpChapterDataProviderBased("Document Viewers", helpDataProvider, "DocumentViewers.html");
 		helpRoot.addSubChapter(helpDocumentViewers);
 		
-		HelpChapter helpEditorExtensions = new DynamicHelpChapter("Editor Extensions", (dataBaseUrl + "EditorExtensions.html"));
+		HelpChapter helpEditorExtensions = new HelpChapterDataProviderBased("Editor Extensions", helpDataProvider, "EditorExtensions.html");
 		helpRoot.addSubChapter(helpEditorExtensions);
 		
 		HelpChapter helpResourceManagers = null;
@@ -1137,17 +1138,63 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		HelpChapter helpCustomFunctions = null;
 		HelpChapter helpCustomShortcuts = null;
 		if (this.configuration.isMasterConfiguration()) {
-			helpResourceManagers = new DynamicHelpChapter("Plug-In Resources", (dataBaseUrl + "PlugInResources.html"));
+			helpResourceManagers = new HelpChapterDataProviderBased("Plug-In Resources", helpDataProvider, "PlugInResources.html");
 			helpRoot.addSubChapter(helpResourceManagers);
-			helpPlugins = new DynamicHelpChapter("Other Plug-Ins", (dataBaseUrl + "PlugIns.html"));
+			helpPlugins = new HelpChapterDataProviderBased("Other Plug-Ins", helpDataProvider, "PlugIns.html");
 			helpRoot.addSubChapter(helpPlugins);
 		}
 		else {
-			helpCustomFunctions = new DynamicHelpChapter("Markup Funktions", (dataBaseUrl + "MarkupFunctions.html"));
+			helpCustomFunctions = new HelpChapterDataProviderBased("Markup Funktions", helpDataProvider, "MarkupFunctions.html");
 			helpRoot.addSubChapter(helpCustomFunctions);
-			helpCustomShortcuts = new DynamicHelpChapter("Editor Shortcuts", (dataBaseUrl + "EditorShortcuts.html"));
+			helpCustomShortcuts = new HelpChapterDataProviderBased("Editor Shortcuts", helpDataProvider, "EditorShortcuts.html");
 			helpRoot.addSubChapter(helpCustomShortcuts);
 		}
+//	private HelpChapter buildHelp(String dataBaseUrl) {
+//		if (!dataBaseUrl.endsWith("/")) dataBaseUrl += "/";
+//		
+//		HelpChapter helpRoot = new DynamicHelpChapter("GoldenGATE", (dataBaseUrl + "GoldenGATE.html"));
+//		helpRoot.addSubChapter(new DynamicHelpChapter("Glossary",(dataBaseUrl + "Glossary.html")));
+//		
+//		HelpChapter menuHelp = new DynamicHelpChapter("Main Menus", (dataBaseUrl + "MainMenus.html"));
+//		menuHelp.addSubChapter(new DynamicHelpChapter("File", (dataBaseUrl + "FileMenu.html")));
+//		menuHelp.addSubChapter(new DynamicHelpChapter("View", (dataBaseUrl + "ViewMenu.html")));
+//		menuHelp.addSubChapter(new DynamicHelpChapter("Edit", (dataBaseUrl + "EditMenu.html")));
+//		menuHelp.addSubChapter(new DynamicHelpChapter("Tools", (dataBaseUrl + "ToolsMenu.html")));
+//		if (this.configuration.isMasterConfiguration())
+//			menuHelp.addSubChapter(new DynamicHelpChapter("Window", (dataBaseUrl + "WindowMenu.html")));
+//		menuHelp.addSubChapter(new DynamicHelpChapter("Help", (dataBaseUrl + "HelpMenu.html")));
+//		helpRoot.addSubChapter(menuHelp);
+//		
+//		helpRoot.addSubChapter(DocumentEditor.getHelp(dataBaseUrl));
+//		
+//		HelpChapter helpDocumentIo = new DynamicHelpChapter("Document IO", (dataBaseUrl + "DocumentIO.html"));
+//		helpRoot.addSubChapter(helpDocumentIo);
+//		
+//		HelpChapter helpDocumentFormats = new DynamicHelpChapter("Document Formats", (dataBaseUrl + "DocumentFormats.html"));
+//		helpRoot.addSubChapter(helpDocumentFormats);
+//		
+//		HelpChapter helpDocumentViewers = new DynamicHelpChapter("Document Viewers", (dataBaseUrl + "DocumentViewers.html"));
+//		helpRoot.addSubChapter(helpDocumentViewers);
+//		
+//		HelpChapter helpEditorExtensions = new DynamicHelpChapter("Editor Extensions", (dataBaseUrl + "EditorExtensions.html"));
+//		helpRoot.addSubChapter(helpEditorExtensions);
+//		
+//		HelpChapter helpResourceManagers = null;
+//		HelpChapter helpPlugins = null;
+//		HelpChapter helpCustomFunctions = null;
+//		HelpChapter helpCustomShortcuts = null;
+//		if (this.configuration.isMasterConfiguration()) {
+//			helpResourceManagers = new DynamicHelpChapter("Plug-In Resources", (dataBaseUrl + "PlugInResources.html"));
+//			helpRoot.addSubChapter(helpResourceManagers);
+//			helpPlugins = new DynamicHelpChapter("Other Plug-Ins", (dataBaseUrl + "PlugIns.html"));
+//			helpRoot.addSubChapter(helpPlugins);
+//		}
+//		else {
+//			helpCustomFunctions = new DynamicHelpChapter("Markup Funktions", (dataBaseUrl + "MarkupFunctions.html"));
+//			helpRoot.addSubChapter(helpCustomFunctions);
+//			helpCustomShortcuts = new DynamicHelpChapter("Editor Shortcuts", (dataBaseUrl + "EditorShortcuts.html"));
+//			helpRoot.addSubChapter(helpCustomShortcuts);
+//		}
 		
 		
 		GoldenGatePlugin[] plugins = this.getPlugins();
@@ -2116,11 +2163,22 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 * @param on the subject of the desired help information
 	 */
 	public void help(String on) {
+		this.showHelp(on);
+	}
+	
+	/**
+	 * Show some help information.
+	 * @param on the subject of the desired help information
+	 */
+	public void showHelp(String on) {
 		if (this.help != null)
 			this.help.showHelp(on);
 	}
 	
-	private void about() {
+	/**
+	 * Display an 'About' info box.
+	 */
+	public void showAbout() {
 		StringVector aboutExtensions = new StringVector();
 		GoldenGatePlugin[] plugins = this.getPlugins();
 		for (int p = 0; p < plugins.length; p++) {
@@ -2136,12 +2194,15 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), (ABOUT_TEXT + (aboutExtensions.isEmpty() ? "" : ("\n" + aboutExtensions.concatStrings("\n")))), "About GoldenGATE Document Editor", JOptionPane.INFORMATION_MESSAGE, new ImageIcon(getGoldenGateIcon()));
 	}
 	
-	private void showReadme() {
+	/**
+	 * Display the 'README.txt' of the current configuration.
+	 */
+	public void showReadme() {
 		StringVector readme;
 		try {
-			InputStream ris = this.configuration.getInputStream(README_FILE_NAME);
-			readme = StringVector.loadList(ris);
-			ris.close();
+			InputStreamReader rr = new InputStreamReader(this.configuration.getInputStream(README_FILE_NAME), "UTF-8");
+			readme = StringVector.loadList(rr);
+			rr.close();
 		}
 		catch (IOException ioe) {
 			readme = new StringVector();
@@ -2151,7 +2212,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 				readme.addElement(stes[s].toString());
 		}
 		
-		final DialogPanel readmeDialog = new DialogPanel(("GoldenGATE - " + this.configuration.getName() + " - " + README_FILE_NAME), true);
+		final DialogPanel readmeDialog = new DialogPanel(("GoldenGATE Document Editor - " + this.configuration.getName() + " - " + README_FILE_NAME), true);
 		
 		final JTextArea readmeDisplay = new JTextArea();
 		readmeDisplay.setEditable(false);
@@ -3020,6 +3081,14 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 */
 	public String getConfigurationPath() {
 		return ((this.configuration == null) ? null : this.configuration.getPath());
+	}
+	
+	/**
+	 * @return a data provider pointing to the help path of the configuration
+	 *         wrapped in this GoldenGATE instance
+	 */
+	public GoldenGatePluginDataProvider getHelpDataProvider() {
+		return this.configuration.getHelpDataProvider();
 	}
 	
 	/**

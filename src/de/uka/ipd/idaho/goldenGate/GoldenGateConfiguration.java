@@ -38,6 +38,7 @@ import javax.swing.JMenuItem;
 
 import de.uka.ipd.idaho.easyIO.settings.Settings;
 import de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePlugin;
+import de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePluginDataProvider;
 
 /**
  * A configuration object provides all the plug-in extensions and settings for
@@ -204,8 +205,16 @@ public interface GoldenGateConfiguration extends GoldenGateConstants {
 	
 	/**
 	 * @return the base URL for the GoldenGATE help
+	 * @deprecated use <code>getHelpBaseDataProvider()</code> instead
 	 */
 	public abstract String getHelpBaseURL();
+	
+	/**
+	 * Obtain a data provider dedicated for the help of the configuration. The
+	 * data provider may be read-only.
+	 * @return a data provider pointing to the documentation folder
+	 */
+	public abstract GoldenGatePluginDataProvider getHelpDataProvider();
 	
 	/**
 	 * Write an entry to the log file (this method may be implemented to do

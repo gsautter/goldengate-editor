@@ -10041,7 +10041,7 @@ public class AnnotationEditorPanel extends JPanel implements GoldenGateConstants
 	
 	/** get help
 	 * @param	dataBaseUrl	the path where external help files are located
-	 * @return a hirarchy of HelpChapters explaining the functionality of an AnnotationEditor
+	 * @return a hierarchy of HelpChapters explaining the functionality of an AnnotationEditor
 	 */
 	static HelpChapter getHelp(String dataBaseUrl) {
 		HelpChapter help = new DynamicHelpChapter("Annotation Editor", (dataBaseUrl + "AnnotationEditor.html"));
