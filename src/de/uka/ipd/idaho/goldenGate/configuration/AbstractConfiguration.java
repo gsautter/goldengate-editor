@@ -233,15 +233,18 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#getSettings()
 	 */
 	public Settings getSettings() {
+		if (this.settings != null)
+			return this.settings;
 		InputStream sis = null;
 		try {
 			sis = this.getInputStream(CONFIG_FILE_NAME);
-			return Settings.loadSettings(sis);
+			this.settings = Settings.loadSettings(sis);
+			return this.settings;
 		}
 		catch (IOException ioe) {
 			System.out.println("Exception getting settings: " + ioe.getMessage());
 			ioe.printStackTrace(System.out);
-			return new Settings(); // return empty settings so defaults are user in main program
+			return new Settings(); // return empty settings so defaults are used in main program
 		}
 		finally {
 			if (sis != null) try {
@@ -249,6 +252,7 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 			} catch (IOException ioe) {}
 		}
 	}
+	private Settings settings = null;
 	
 	/* (non-Javadoc)
 	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#storeSettings(de.uka.ipd.idaho.easyIO.settings.Settings)
