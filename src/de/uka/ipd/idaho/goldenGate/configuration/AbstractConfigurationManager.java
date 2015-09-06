@@ -44,6 +44,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.Writer;
 import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
@@ -380,15 +381,23 @@ public abstract class AbstractConfigurationManager extends AbstractGoldenGatePlu
 		//	extend README.txt
 		final StringVector readmeLines = new StringVector();
 		try {
-			readmeLines.addContent(StringVector.loadList(new InputStreamReader(exportHost.dataProvider.getInputStream(exportName + "." + README_FILE_NAME), "UTF-8")));
+			Reader rmIn = new InputStreamReader(exportHost.dataProvider.getInputStream(exportName + "." + README_FILE_NAME), "UTF-8");
+			readmeLines.addContent(StringVector.loadList(rmIn));
+			rmIn.close();
 			if (ConfigurationUtils.extendReadme(readmeLines, exportName, System.currentTimeMillis())) try {
-				readmeLines.storeContent(new OutputStreamWriter(exportHost.dataProvider.getOutputStream(exportName + "." + README_FILE_NAME), "UTF-8"));
+				Writer rmOut = new OutputStreamWriter(exportHost.dataProvider.getOutputStream(exportName + "." + README_FILE_NAME), "UTF-8");
+				readmeLines.storeContent(rmOut);
+				rmOut.flush();
+				rmOut.close();
 			} catch (IOException ioe) {}
 		}
 		catch (FileNotFoundException fnfe) {
 			readmeLines.addContent(ConfigurationUtils.createReadme(exportName, System.currentTimeMillis()));
 			if (readmeLines.size() != 0) try {
-				readmeLines.storeContent(new OutputStreamWriter(exportHost.dataProvider.getOutputStream(exportName + "." + README_FILE_NAME), "UTF-8"));
+				Writer rmOut = new OutputStreamWriter(exportHost.dataProvider.getOutputStream(exportName + "." + README_FILE_NAME), "UTF-8");
+				readmeLines.storeContent(rmOut);
+				rmOut.flush();
+				rmOut.close();
 			} catch (IOException ioe) {}
 		}
 		catch (IOException ioe) {
