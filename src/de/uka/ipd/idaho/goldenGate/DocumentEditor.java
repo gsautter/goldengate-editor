@@ -1653,7 +1653,7 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 		this.displayUndoHistory();
 	}
 	
-	private static final boolean DEBUG_WRITETHROUGH = true;
+	private static final boolean DEBUG_WRITETHROUGH = false;
 	
 	/**
 	 * Write the changes made to a working copy of a content mutable annotation
@@ -3034,7 +3034,7 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 		return this.annotationEditor.getFilters(false);
 	}
 	
-	/* TODO re-work document processort application:
+	/* TODO re-work document processor application:
 	 * - open splash screen BEFORE loading actual DP (protects UI from further clicks if DP takes some time to load)
 	 * - allow specifying label for undo action (e.g., custom function can submit its label, easier to grasp for user than pipeline name)
 	 * - add DP manager as argument (obsoletes getting it from registry)
