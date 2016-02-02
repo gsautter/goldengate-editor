@@ -1203,7 +1203,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 				
 				//	download configuration descriptor
 				try {
-					BufferedReader configReader = new BufferedReader(new InputStreamReader(new URL(remote.host + "/" + remote.name + "/" + GoldenGateConfiguration.DESCRIPTOR_FILE_NAME).openStream(), "UTF-8"));
+					BufferedReader configReader = new BufferedReader(new InputStreamReader(new URL(remote.host + (remote.host.endsWith("/") ? "" : "/") + remote.name + "/" + GoldenGateConfiguration.DESCRIPTOR_FILE_NAME).openStream(), "UTF-8"));
 					Configuration config = Configuration.readConfiguration(configReader);
 					System.out.println(" - extracting file list from XML descriptor");
 					
@@ -1260,7 +1260,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 				//	resort to classical file list if descriptor not found
 				catch (IOException ioe) {
 					System.out.println(" - XML descriptor not available, using plain file list");
-					BufferedReader fileIndexReader = new BufferedReader(new InputStreamReader(new URL(remote.host + "/" + remote.name + "/" + GoldenGateConfiguration.FILE_INDEX_NAME).openStream()));
+					BufferedReader fileIndexReader = new BufferedReader(new InputStreamReader(new URL(remote.host + (remote.host.endsWith("/") ? "" : "/") + remote.name + "/" + GoldenGateConfiguration.FILE_INDEX_NAME).openStream()));
 					String fileName;
 					while ((fileName = fileIndexReader.readLine()) != null) {
 						fileList.addElement(fileName);
@@ -1289,12 +1289,12 @@ public class ConfigurationUtils implements GoldenGateConstants {
 					InputStream source;
 					long sourceLastModified;
 					if (timestamp == null) {
-						URLConnection sourceUrlConnection = new URL(remote.host + "/" + remote.name + "/" + fileName).openConnection();
+						URLConnection sourceUrlConnection = new URL(remote.host + (remote.host.endsWith("/") ? "" : "/") + remote.name + "/" + fileName).openConnection();
 						source = sourceUrlConnection.getInputStream();
 						sourceLastModified = sourceUrlConnection.getLastModified();
 					}
 					else {
-						final URLConnection sourceUrlConnection = new URL(remote.host + "/" + remote.name + "/" + fileName).openConnection();
+						final URLConnection sourceUrlConnection = new URL(remote.host + (remote.host.endsWith("/") ? "" : "/") + remote.name + "/" + fileName).openConnection();
 						source = new InputStream() {
 							InputStream iSource = null;
 							public void close() throws IOException {
