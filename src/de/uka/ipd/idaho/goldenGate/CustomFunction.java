@@ -358,7 +358,7 @@ public class CustomFunction {
 		
 		/**
 		 * retrieve a customFunction by its name
-		 * @param name the name of the reqired customFunction
+		 * @param name the name of the required customFunction
 		 * @return the customFunction with the required name, or null, if there
 		 *         is no such custom function
 		 */

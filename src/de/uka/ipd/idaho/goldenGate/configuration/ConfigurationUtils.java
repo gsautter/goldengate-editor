@@ -3163,7 +3163,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 			//	get available configurations
 			ConfigurationDescriptor[] configurations = getConfigurations(configHost, baseFolder);
 			
-			//	find required configuration
+			//	find requested configuration
 			ConfigurationDescriptor configuration = getConfiguration(configurations, configName, baseFolder, false, false);
 			if (configuration == null)
 				return null;

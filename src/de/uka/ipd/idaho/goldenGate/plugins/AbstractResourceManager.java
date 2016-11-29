@@ -199,11 +199,6 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 			for (int c; (c = br.read()) != -1;)
 				sw.write((char) c);
 			br.close();
-//			InputStream is = new BufferedInputStream(this.dataProvider.getInputStream(resourceName));
-//			int i;
-//			while ((i = is.read()) != -1)
-//				sw.write(i);
-//			is.close();
 			return sw.toString();
 		}
 		catch (IOException ioe) {
@@ -228,17 +223,6 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 				bw.write((char) c);
 			bw.flush();
 			bw.close();
-//			StringVector lines = new StringVector();
-//			lines.parseAndAddElements(resource, "\n");
-//			
-//			BufferedWriter out = new BufferedWriter(new OutputStreamWriter(this.dataProvider.getOutputStream(resourceName)));
-//			
-//			for (int l = 0; l < lines.size(); l++) {
-//				out.write(lines.get(l));
-//				out.newLine();
-//			}
-//			out.flush();
-//			out.close();
 			this.parent.notifyResourcesChanged(this.getClass().getName());
 			return true;
 		}
@@ -255,9 +239,6 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 			BufferedReader br = new BufferedReader(new InputStreamReader(this.dataProvider.getInputStream(resourceName), "UTF-8"));
 			StringVector resource = StringVector.loadList(br);
 			br.close();
-//			InputStreamReader reader = new InputStreamReader(this.dataProvider.getInputStream(resourceName));
-//			StringVector resource = StringVector.loadList(reader);
-//			reader.close();
 			return resource;
 		}
 		catch (IOException e) {
@@ -280,10 +261,6 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 			resource.storeContent(bw);
 			bw.flush();
 			bw.close();
-//			OutputStream os = this.dataProvider.getOutputStream(resourceName);
-//			resource.storeContent(os);
-//			os.flush();
-//			os.close();
 			this.parent.notifyResourcesChanged(this.getClass().getName());
 			return true;
 		}
@@ -300,9 +277,6 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 			BufferedReader br = new BufferedReader(new InputStreamReader(this.dataProvider.getInputStream(resourceName), "UTF-8"));
 			Settings set = Settings.loadSettings(br);
 			br.close();
-//			InputStream is = this.dataProvider.getInputStream(resourceName);
-//			Settings set = Settings.loadSettings(is);
-//			is.close();
 			return set;
 		}
 		catch (IOException e) {
@@ -325,10 +299,6 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 			resource.storeAsText(bw);
 			bw.flush();
 			bw.close();
-//			OutputStream os = this.dataProvider.getOutputStream(resourceName);
-//			resource.storeAsText(os);
-//			os.flush();
-//			os.close();
 			this.parent.notifyResourcesChanged(this.getClass().getName());
 			return true;
 		}
