@@ -36,10 +36,27 @@ package de.uka.ipd.idaho.goldenGate.observers;
 public interface ResourceObserver {
 	
 	/**
-	 * notify the Observer that some update (create, delete) was made to a given
+	 * Notify the observer that some update (create, delete) was made to a given
 	 * type of resources
-	 * @param resourceProviderClassName the class name of the ResourceManager
+	 * @param resourceProviderClassName the class name of the resource manager
 	 *            providing the resource
+	 * @deprecated use resourceUpdated() and resourceDeleted() instead
 	 */
 	public abstract void resourcesChanged(String resourceProviderClassName);
+	
+	/**
+	 * Notify the observer that some resource was created or updated.
+	 * @param resourceProviderClassName the class name of the resource manager
+	 *            providing the resource
+	 * @param resourceName the name of the resource that was updated
+	 */
+	public abstract void resourceUpdated(String resourceProviderClassName, String resourceName);
+	
+	/**
+	 * Notify the observer that some resource was deleted.
+	 * @param resourceProviderClassName the class name of the resource manager
+	 *            providing the resource
+	 * @param resourceName the name of the resource that was deleted
+	 */
+	public abstract void resourceDeleted(String resourceProviderClassName, String resourceName);
 }

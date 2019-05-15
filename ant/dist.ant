@@ -5,7 +5,7 @@
 -->
 
 <project name="dist">
-	<target name="zips" depends="editorzip,vpackerzip,cpackerzip">
+	<target name="zips" depends="editorzip,editorbatchzip,vpackerzip,cpackerzip">
 	</target>
 	
 	
@@ -21,6 +21,19 @@
 				<include name="**/**.java" />
 				<exclude name="**/utilities/**.java" />
 				<exclude name="**/starter/**.java" />
+			</fileset>
+			<fileset dir="." includes="LICENSE.txt"/>
+		</jar>
+	</target>
+	
+	<target name="editorbatch">
+		<delete file="${jar.editorbatch}" />
+		<jar destfile="${jar.editorbatch}" manifest="${file.home}/MANIFEST.batch.MF">
+			<fileset dir="${build.home}/classes">
+				<include name="**/batch/**.class" />
+			</fileset>
+			<fileset dir="${src.home}">
+				<include name="**/batch/**.java" />
 			</fileset>
 			<fileset dir="." includes="LICENSE.txt"/>
 		</jar>
@@ -70,6 +83,15 @@
 			<fileset dir="${dist.home}/" includes="Installer.jar"/>
 			<fileset dir="${dist.home}/" includes="GoldenGateStarter.jar"/>
 			<fileset dir="${dist.home}" includes="Plugins/**"/>
+			<fileset dir="." includes="LICENSE.txt"/>
+		</zip>
+	</target>
+	
+	<target name="editorbatchzip" depends="editor,editorbatch">
+		<delete file="${app.editorbatch}" />
+		<zip destfile="${app.editorbatch}">
+			<fileset dir="${file.home}/editor" includes="GoldenGateBatch.cnfg"/>
+			<fileset dir="${dist.home}/" includes="GoldenGateBatch.jar"/>
 			<fileset dir="." includes="LICENSE.txt"/>
 		</zip>
 	</target>

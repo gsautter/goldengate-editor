@@ -2304,10 +2304,35 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 * @return an array holding all GoldenGatePlugins registered
 	 */
 	public GoldenGatePlugin[] getPlugins() {
-		ArrayList extensions = new ArrayList(this.pluginsByClassName.values());
-		return ((GoldenGatePlugin[]) extensions.toArray(new GoldenGatePlugin[extensions.size()]));
+		ArrayList plugins = new ArrayList(this.pluginsByClassName.values());
+		return ((GoldenGatePlugin[]) plugins.toArray(new GoldenGatePlugin[plugins.size()]));
 	}
 	
+	/**
+	 * Find a GoldenGatePlugin derived from a specific class.
+	 * @param cls the class whose implementation to find
+	 * @return the first GoldenGatePlugin derived from the argument class
+	 */
+	public GoldenGatePlugin getImplementingPlugin(Class cls) {
+		GoldenGatePlugin[] implementingPlugins = this.getImplementingPlugins(cls);
+		return ((implementingPlugins.length == 0) ? null : implementingPlugins[0]);
+	}
+	
+	/**
+	 * Find all GoldenGatePlugins derived from a specific class.
+	 * @param cls the class whose implementations to find
+	 * @return an array holding the GoldenGatePlugins derived from the argument
+	 *            class
+	 */
+	public GoldenGatePlugin[] getImplementingPlugins(Class cls) {
+		ArrayList plugins = new ArrayList();
+		for (Iterator pit = this.pluginsByClassName.values().iterator(); pit.hasNext();) {
+			Object plugin = pit.next();
+			if (cls.isInstance(plugin))
+				plugins.add(plugin);
+		}
+		return ((GoldenGatePlugin[]) plugins.toArray(new GoldenGatePlugin[plugins.size()]));
+	}
 	
 	
 	//	register and lookup method for generic Resource access
@@ -2820,10 +2845,35 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 * the ResourceManager with the specified name have changed.
 	 * @param resourceProviderClassName the class name of the ResourceManager
 	 *            issuing the change
+	 * @deprecated use notifyResourceUpdated() and notifyResourceDeleted() instead
 	 */
 	public void notifyResourcesChanged(String resourceProviderClassName) {
 		for (int o = 0; o < this.resourceObservers.size(); o++)
 			((ResourceObserver) this.resourceObservers.get(o)).resourcesChanged(resourceProviderClassName);
+	}
+	
+	/**
+	 * Notify all registered resource observers that some resource provided by
+	 * the resource manager with the specified name was created or updated.
+	 * @param resourceProviderClassName the class name of the resource manager
+	 *            issuing the change
+	 * @param resourceName the name of the resource that was updated
+	 */
+	public void notifyResourceUpdated(String resourceProviderClassName, String resourceName) {
+		for (int o = 0; o < this.resourceObservers.size(); o++)
+			((ResourceObserver) this.resourceObservers.get(o)).resourceUpdated(resourceProviderClassName, resourceName);
+	}
+	
+	/**
+	 * Notify all registered resource observers that some resource provided by
+	 * the resource manager with the specified name was deleted.
+	 * @param resourceProviderClassName the class name of the resource manager
+	 *            issuing the change
+	 * @param resourceName the name of the resource that was deleted
+	 */
+	public void notifyResourceDeleted(String resourceProviderClassName, String resourceName) {
+		for (int o = 0; o < this.resourceObservers.size(); o++)
+			((ResourceObserver) this.resourceObservers.get(o)).resourceDeleted(resourceProviderClassName, resourceName);
 	}
 	
 	

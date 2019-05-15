@@ -368,7 +368,6 @@ public abstract class AbstractConfigurationManager extends AbstractGoldenGatePlu
 	}
 	
 	private boolean doExport(final String exportName, final StringVector selected, final boolean saveDesc, final File rootPath, final AbstractConfigurationManager exportHost) {
-		
 		System.out.println("AbstractConfigurationManager: doing export '" + exportName + "' in " + this.getClass().getName());
 		System.out.println("  - root path is " + rootPath.getAbsolutePath());
 		System.out.println("  - save descriptor is " + saveDesc);
@@ -617,74 +616,4 @@ public abstract class AbstractConfigurationManager extends AbstractGoldenGatePlu
 			this.setLocationRelativeTo(this.getWindow().getOwner());
 		}
 	}
-//	public static class ExportStatusDialog extends DialogPanel implements StatusMonitor {
-//		private JLabel exportStepLabel = new JLabel("", JLabel.LEFT);
-//		
-//		private JLabel label = new JLabel("", JLabel.CENTER);
-//		private ArrayList labelLines = new ArrayList();
-//		
-//		private int baseProgress = 0;
-//		private int maxProgress = 100;
-//		private JProgressBar progress = new JProgressBar();
-//		
-//		/**
-//		 * boolean for transporting export success out of a thread
-//		 */
-//		public boolean success = true;
-//		
-//		/**
-//		 * Constructor
-//		 */
-//		public ExportStatusDialog() {
-//			super("Exporting GoldenGATE Configuration", true);
-//			
-//			this.progress.setStringPainted(true);
-//			
-//			this.getContentPane().setLayout(new BorderLayout());
-//			this.getContentPane().add(this.exportStepLabel, BorderLayout.NORTH);
-//			this.getContentPane().add(this.label, BorderLayout.CENTER);
-//			this.getContentPane().add(this.progress, BorderLayout.SOUTH);
-//			
-//			this.setSize(500, 170);
-//			this.setLocationRelativeTo(this.getOwner());
-//			this.getDialog().setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-//		}
-//		
-//		public void setExportStep(String exportStep) {
-//			System.out.println(exportStep);
-//			try {
-//				this.exportStepLabel.setText(exportStep);
-//				this.exportStepLabel.validate();
-//			} catch (RuntimeException re) {}
-//		}
-//		
-//		public void setLabel(String text) {
-//			System.out.println(text);
-//			this.labelLines.add(text);
-//			while (this.labelLines.size() > 3)
-//				this.labelLines.remove(0);
-//			
-//			StringBuffer labelText = new StringBuffer("<HTML>" + this.labelLines.get(0));
-//			for (int l = 1; l < this.labelLines.size(); l++)
-//				labelText.append("<BR>" + this.labelLines.get(l));
-//			labelText.append("</HTML>");
-//			
-//			try {
-//				this.label.setText(labelText.toString());
-//				this.label.validate();
-//			} catch (RuntimeException re) {}
-//		}
-//		
-//		public void setBaseProgress(int baseProgress) {
-//			this.baseProgress = baseProgress;
-//		}
-//		
-//		public void setMaxProgress(int maxProgress) {
-//			this.maxProgress = maxProgress;
-//		}
-//		
-//		public void setProgress(int progress) {
-//			this.progress.setValue(this.baseProgress + (((this.maxProgress - this.baseProgress) * progress) / 100));
-//		}
-//	}
 }

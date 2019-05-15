@@ -387,7 +387,7 @@ public class DialogPanel extends JPanel {
 	 * @return	the dialog this panel resides in
 	 */
 	public JDialog getDialog() {
-		return this.dialog; 
+		return this.dialog;
 	}
 	
 	/* (non-Javadoc)

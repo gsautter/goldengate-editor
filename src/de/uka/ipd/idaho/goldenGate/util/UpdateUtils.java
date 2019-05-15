@@ -272,7 +272,7 @@ public class UpdateUtils implements GoldenGateConstants {
 				
 				//	check if update is recent, download if so
 				String updateTimestamp = updateFileName.substring(updateName.length(), updateFileName.length() - 4);
-				if (updateTimestamp.compareTo(ggTimestampString) > 0) {
+				if (updateTimestamp.compareTo(ggTimestampString) < 0) {
 					System.out.println(" - update '" + updateFileName + "' is out of date.");
 					if (sd != null) sd.setStatusLabel(" - update '" + updateFileName + "' is out of date.");
 					continue;
@@ -312,157 +312,8 @@ public class UpdateUtils implements GoldenGateConstants {
 				}
 			}
 		}
-//
-//		for (int h = 0; h < updateHosts.length; h++) try {
-//			if ((updateHosts[h].trim().length() == 0) || updateHosts[h].startsWith("//"))
-//				continue;
-//			
-//			//	keep user posted
-//			System.out.println("Start downloading update links from '" + updateHosts[h] + "' ...");
-//			if (sd != null) sd.setHost(updateHosts[h]);
-//			
-//			//	download update index from update host
-//			URL updateHostUrl = new URL(updateHosts[h] + (updateHosts[h].endsWith("/") ? "" : "/"));
-//			ArrayList updateUrls = new ArrayList();
-//			BufferedReader updateIndexReader = new BufferedReader(new InputStreamReader(updateHostUrl.openStream()));
-//			String updateIndexLine;
-//			while ((updateIndexLine = updateIndexReader.readLine()) != null) {
-//				Matcher updateLinkMatcher = updateHrefPattern.matcher(updateIndexLine);
-//				if (updateLinkMatcher.find()) {
-//					String updateLink = updateLinkMatcher.group(1);
-//					System.out.println(" - got update link: '" + updateLink + "'");
-//					updateUrls.add(updateLink);
-//				}
-//			}
-//			
-//			//	download updates
-//			for (int u = 0; u < updateUrls.size(); u++) {
-//				String updateFileName = updateUrls.get(u).toString();
-//				updateFileName = updateFileName.substring(updateFileName.lastIndexOf("/") + 1);
-//				
-//				//	update already installed
-//				if (updateFileNames.contains(updateFileName.toLowerCase())) {
-//					System.out.println(" - update '" + updateFileName + "' is available locally.");
-//					continue;
-//				}
-//				
-//				//	check if update is recent, download if so
-//				String updateTimestamp = updateFileName.substring(updateName.length(), updateFileName.length() - 4);
-//				if (updateTimestamp.compareTo(ggTimestampString) > 0) {
-//					System.out.println(" - update '" + updateFileName + "' is out of date.");
-//					continue;
-//				}
-//				
-//				//	extract update timestamp & compare to timestamp of GoldenGATE.jar
-//				try {
-//					System.out.println(" - downloading update '" + updateFileName + "' ...");
-//					if (sd != null) sd.setLabel("Downloading " + updateFileName);
-//					
-//					File destFile = new File(updateFolder, updateFileName);
-//					System.out.println(" - destination file is '" + destFile.getAbsolutePath() + "'");
-//					destFile.createNewFile();
-//					
-//					FileOutputStream dest = new FileOutputStream(destFile);
-//					System.out.println("   - got destination file writer");
-//					
-//					BufferedInputStream bis = new BufferedInputStream(new URL(updateHosts[h] + (updateHosts[h].endsWith("/") ? "" : "/") + updateFileName).openStream());
-//					System.out.println("   - got reader");
-//					
-//					int count;
-//					byte data[] = new byte[1024];
-//					while ((count = bis.read(data, 0, 1024)) != -1)
-//						dest.write(data, 0, count);
-//					dest.flush();
-//					dest.close();
-//					bis.close();
-//					System.out.println("   - download completed");
-//				}
-//				catch (IOException ioe) {
-//					System.out.println("GoldenGateStarter: " + ioe.getClass().getName() + " (" + ioe.getMessage() + ") while downloading update '" + updateFileName + "' from '" + updateHosts[h] + "'");
-//					ioe.printStackTrace(System.out);
-//				}
-//			}
-//		}
-//		catch (IOException ioe) {
-//			System.out.println("GoldenGateStarter: " + ioe.getClass().getName() + " (" + ioe.getMessage() + ") while downloading update index from '" + updateHosts[h] + "'");
-//			ioe.printStackTrace(System.out);
-//		}
 	}
 	
-//	
-//	//	get available configurations from configuration hosts
-//	for (int h = 0; h < CONFIG_HOSTS.size(); h++) {
-//		final int ch = h;
-//		final String configHost = CONFIG_HOSTS.get(ch).trim();
-//		if (configHost.startsWith("//"))
-//			continue;
-//		
-//		//	show activity
-//		sd.setStatusLabel("- from " + configHost);
-//		
-//		//	create control objects
-//		final Object configFetcherLock = new Object();
-//		final boolean[] addHostConfigs = {true};
-//		
-//		//	build buttons
-//		JButton skipButton = new StatusDialogButton("Skip", 5, 2);
-//		skipButton.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent ae) {
-//				synchronized (configFetcherLock) {
-//					addHostConfigs[0] = false;
-//					configFetcherLock.notify();
-//				}
-//			}
-//		});
-//		
-//		JButton alwaysSkipButton = new StatusDialogButton("Always Skip", 5, 2);
-//		alwaysSkipButton.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent ae) {
-//				synchronized (configFetcherLock) {
-//					CONFIG_HOSTS.setElementAt(("//" + configHost), ch);
-//					configHostsModified[0] = true;
-//					addHostConfigs[0] = false;
-//					configFetcherLock.notify();
-//				}
-//			}
-//		});
-//		
-//		//	line up button panel
-//		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-//		buttonPanel.setBackground(Color.WHITE);
-//		buttonPanel.add(skipButton);
-//		buttonPanel.add(alwaysSkipButton);
-//		
-//		//	show buttons
-//		sd.setCustomComponent(buttonPanel);
-//		
-//		//	load configs in extra thread
-//		Thread configFetcher = new Thread() {
-//			public void run() {
-//				ConfigurationDescriptor[] hostConfigs = ConfigurationUtils.getRemoteConfigurations(configHost);
-//				synchronized (configFetcherLock) {
-//					if (!addHostConfigs[0])
-//						return;
-//					for (int c = 0; c < hostConfigs.length; c++)
-//						configList.add(hostConfigs[c]);
-//					configFetcherLock.notify();
-//				}
-//			}
-//		};
-//		
-//		//	start download and block main thread
-//		synchronized (configFetcherLock) {
-//			configFetcher.start();
-//			System.out.println("Config fetcher started for " + configHost);
-//			try {
-//				configFetcherLock.wait();
-//			}
-//			catch (InterruptedException ie) {
-//				System.out.println("Interrupted waiting for config fetcher from " + configHost);
-//				addHostConfigs[0] = false;
-//			}
-//		}
-//	}
 	/**
 	 * Install the updates deposited in the update folder of a GoldenGATE
 	 * installation.

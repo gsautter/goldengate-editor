@@ -223,7 +223,7 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 				bw.write((char) c);
 			bw.flush();
 			bw.close();
-			this.parent.notifyResourcesChanged(this.getClass().getName());
+			this.parent.notifyResourceUpdated(this.getClass().getName(), resourceName);
 			return true;
 		}
 		else return false;
@@ -241,7 +241,7 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 			br.close();
 			return resource;
 		}
-		catch (IOException e) {
+		catch (IOException ioe) {
 			return null;
 		}
 	}
@@ -261,7 +261,7 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 			resource.storeContent(bw);
 			bw.flush();
 			bw.close();
-			this.parent.notifyResourcesChanged(this.getClass().getName());
+			this.parent.notifyResourceUpdated(this.getClass().getName(), resourceName);
 			return true;
 		}
 		else return false;
@@ -279,7 +279,7 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 			br.close();
 			return set;
 		}
-		catch (IOException e) {
+		catch (IOException ioe) {
 			return null;
 		}
 	}
@@ -299,7 +299,7 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 			resource.storeAsText(bw);
 			bw.flush();
 			bw.close();
-			this.parent.notifyResourcesChanged(this.getClass().getName());
+			this.parent.notifyResourceUpdated(this.getClass().getName(), resourceName);
 			return true;
 		}
 		else return false;
@@ -316,7 +316,7 @@ public abstract class AbstractResourceManager extends AbstractGoldenGatePlugin i
 		if ((resourceName != null) && (JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), ("Really delete " + resourceName), ("Confirm Delete " + this.getResourceTypeLabel()), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION)) {
 			try {
 				if (this.dataProvider.deleteData(resourceName)) {
-					this.parent.notifyResourcesChanged(this.getClass().getName());
+					this.parent.notifyResourceDeleted(this.getClass().getName(), resourceName);
 					return true;
 				}
 				else {

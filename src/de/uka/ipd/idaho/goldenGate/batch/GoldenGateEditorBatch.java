@@ -313,7 +313,7 @@ public class GoldenGateEditorBatch implements GoldenGateConstants {
 			ggConfig = new FileConfiguration("Local Master Configuration", BASE_PATH, true, true, null);
 		
 		//	other local configuration selected
-		else if (ggConfigName.startsWith("http://"))
+		else if (ggConfigName.startsWith("http://") || ggConfigName.startsWith("https://"))
 			ggConfig = new UrlConfiguration(ggConfigName);
 		
 		//	remote configuration selected

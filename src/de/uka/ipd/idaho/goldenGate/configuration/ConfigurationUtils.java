@@ -100,14 +100,15 @@ import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 
+import de.uka.ipd.idaho.easyIO.settings.Settings;
 import de.uka.ipd.idaho.gamta.util.ProgressMonitor;
 import de.uka.ipd.idaho.goldenGate.CustomFunction;
 import de.uka.ipd.idaho.goldenGate.CustomShortcut;
 import de.uka.ipd.idaho.goldenGate.GoldenGATE;
 import de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration;
+import de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration.ConfigurationDescriptor;
 import de.uka.ipd.idaho.goldenGate.GoldenGateConstants;
 import de.uka.ipd.idaho.goldenGate.TokenizerManager;
-import de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration.ConfigurationDescriptor;
 import de.uka.ipd.idaho.goldenGate.plugins.AnnotationFilterManager;
 import de.uka.ipd.idaho.goldenGate.plugins.AnnotationSourceManager;
 import de.uka.ipd.idaho.goldenGate.plugins.DocumentEditorExtension;
@@ -899,6 +900,8 @@ public class ConfigurationUtils implements GoldenGateConstants {
 				configName = configName.substring(0, (configName.length() - ".zip".length()));
 				
 				configurations.add(new ConfigurationDescriptor(zipConfigHostName, configName, timestamp));
+				
+				configZip.close();
 			}
 			catch (IOException ioe) {
 				System.out.println(" - Error: " + ioe.getClass().getName() + " (" + ioe.getMessage() + ")");
@@ -965,7 +968,28 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	 * @return a descriptor for the configuration with the specified name
 	 */
 	public static ConfigurationDescriptor getConfiguration(ConfigurationDescriptor[] configurations, String configName, File dataBasePath, boolean showStatusOnUpdate) {
-		return getConfiguration(configurations, configName, dataBasePath, true, showStatusOnUpdate);
+		return getConfiguration(configurations, configName, dataBasePath, CACHE_UPDATE_POLICY_MOVE, true, showStatusOnUpdate);
+	}
+	
+	/**
+	 * Get the descriptor of the configuration with a given name from a list of
+	 * configuration descriptors, installing updates from remote hosts in case
+	 * they exist and a user authorizes the update. If the specified
+	 * configuration name is null or the specified list of configuration
+	 * descriptors does not contain a descriptor with the specified name, this
+	 * method returns null.
+	 * @param configurations the configuration descriptors to choose from
+	 * @param configName the name of the configuration to obtain a descriptor
+	 *            for
+	 * @param dataBasePath the base path of the local GoldenGATE installation
+	 * @param cachePolicy how to handle any cached content present in a local
+	 *            configuration in case of an update?
+	 * @param showStatusOnUpdate show the download/update progress in a dialog
+	 *            in case of a download or update?
+	 * @return a descriptor for the configuration with the specified name
+	 */
+	public static ConfigurationDescriptor getConfiguration(ConfigurationDescriptor[] configurations, String configName, File dataBasePath, int cachePolicy, boolean showStatusOnUpdate) {
+		return getConfiguration(configurations, configName, dataBasePath, cachePolicy, true, showStatusOnUpdate);
 	}
 	
 	/**
@@ -986,6 +1010,29 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	 * @return a descriptor for the configuration with the specified name
 	 */
 	public static ConfigurationDescriptor getConfiguration(ConfigurationDescriptor[] configurations, String configName, File dataBasePath, boolean askUpdatePermission, boolean showStatusOnUpdate) {
+		return getConfiguration(configurations, configName, dataBasePath, CACHE_UPDATE_POLICY_MOVE, askUpdatePermission, showStatusOnUpdate);
+	}
+	
+	/**
+	 * Get the descriptor of the configuration with a given name from a list of
+	 * configuration descriptors, installing updates from remote hosts in case
+	 * they exist and a user authorizes the update. If the specified
+	 * configuration name is null or the specified list of configuration
+	 * descriptors does not contain a descriptor with the specified name, this
+	 * method returns null.
+	 * @param configurations the configuration descriptors to choose from
+	 * @param configName the name of the configuration to obtain a descriptor
+	 *            for
+	 * @param dataBasePath the base path of the local GoldenGATE installation
+	 * @param cachePolicy how to handle any cached content present in a local
+	 *            configuration in case of an update?
+	 * @param askUpdatePermission ask before updating a local configuration from
+	 *            a more recent remote source?
+	 * @param showStatusOnUpdate show the download/update progress in a dialog
+	 *            in case of a download or update?
+	 * @return a descriptor for the configuration with the specified name
+	 */
+	public static ConfigurationDescriptor getConfiguration(ConfigurationDescriptor[] configurations, String configName, File dataBasePath, int cachePolicy, boolean askUpdatePermission, boolean showStatusOnUpdate) {
 		if (configName == null)
 			return null;
 		
@@ -1017,7 +1064,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		 * storage media rather than downloaded
 		 */
 		if (isMoreRecentThan(zippedConfig, localConfig)) try {
-			localConfig = updateLocalConfiguration(localConfig, zippedConfig, dataBasePath, showStatusOnUpdate);
+			localConfig = updateLocalConfiguration(localConfig, zippedConfig, dataBasePath, cachePolicy, askUpdatePermission, showStatusOnUpdate);
 		}
 		catch (IOException ioe) {
 			System.out.println(" - Error extracting file of zipped configuration: " + ioe.getClass().getName() + " (" + ioe.getMessage() + ")");
@@ -1032,47 +1079,218 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		if (localConfig == null) {
 			
 			//	ask if download desired
-			if (!askUpdatePermission || askPermission(("The selected Configuration is not available locally.\nShould GoldenGATE download it and make it a local Configuration?"), "Download Configuration?", JOptionPane.QUESTION_MESSAGE)) {
-				try {
-					return updateLocalConfiguration(null, remoteConfig, dataBasePath, showStatusOnUpdate);
-				}
-				catch (IOException ioe) {
-					System.out.println(" - Error downloading remote configuration: " + ioe.getClass().getName() + " (" + ioe.getMessage() + ")");
-					ioe.printStackTrace(System.out);
-					if (showStatusOnUpdate)
-						JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), ("An error occurred while downloading the selected Configuration:\n  " + ioe.getMessage() + "."), "Configuration Download Error", JOptionPane.ERROR_MESSAGE);
-					return null;
-				}
-			}
+//			if (!askUpdatePermission || askPermission(("The selected Configuration is not available locally.\nShould GoldenGATE download it and make it a local Configuration?"), "Download Configuration?", JOptionPane.QUESTION_MESSAGE)) {
+//				try {
+//					return updateLocalConfiguration(null, remoteConfig, dataBasePath, showStatusOnUpdate);
+//				}
+//				catch (IOException ioe) {
+//					System.out.println(" - Error downloading remote configuration: " + ioe.getClass().getName() + " (" + ioe.getMessage() + ")");
+//					ioe.printStackTrace(System.out);
+//					if (showStatusOnUpdate)
+//						JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), ("An error occurred while downloading the selected Configuration:\n  " + ioe.getMessage() + "."), "Configuration Download Error", JOptionPane.ERROR_MESSAGE);
+//					return null;
+//				}
+//			}
+			boolean downloadConfig = true;
+			if (askUpdatePermission)
+				downloadConfig = askPermission(("The selected Configuration is not available locally.\nShould GoldenGATE download it and make it a local Configuration?"), "Download Configuration?", JOptionPane.QUESTION_MESSAGE);
 			
 			//	if not, use remote configuration
-			else return remoteConfig;
+			if (!downloadConfig)
+				return remoteConfig;
+			
+			//	download configuration
+			try {
+				return updateLocalConfiguration(null, remoteConfig, dataBasePath, cachePolicy, askUpdatePermission, showStatusOnUpdate);
+			}
+			catch (IOException ioe) {
+				System.out.println(" - Error downloading remote configuration: " + ioe.getClass().getName() + " (" + ioe.getMessage() + ")");
+				ioe.printStackTrace(System.out);
+				if (showStatusOnUpdate)
+					JOptionPane.showMessageDialog(DialogPanel.getTopWindow(), ("An error occurred while downloading the selected Configuration:\n  " + ioe.getMessage() + "."), "Configuration Download Error", JOptionPane.ERROR_MESSAGE);
+				return null;
+			}
 		}
 		
 		//	got local configuration, check if newer remote version of local configuration available
-		else {
+		else if (isMoreRecentThan(remoteConfig, localConfig)) {
 			
 			//	got remote configuration, ask if update desired
-			if (isMoreRecentThan(remoteConfig, localConfig) && (!askUpdatePermission || askPermission(("There is a more recent version of the selected Configuration available at " + remoteConfig.host + ".\nShould GoldenGATE download the new version?"), "Download new Version of Configuration?", JOptionPane.QUESTION_MESSAGE))) {
-				try {
-					return updateLocalConfiguration(localConfig, remoteConfig, dataBasePath, showStatusOnUpdate);
-				}
-				catch (IOException ioe) {
-					System.out.println(" - Error downloading remote configuration: " + ioe.getClass().getName() + " (" + ioe.getMessage() + ")");
-					ioe.printStackTrace(System.out);
-					return ((!askUpdatePermission || askPermission(("An error occurred while downloading the selected Configuration:\n  " + ioe.getMessage() + ".\nShould GoldenGATE start with the older local Configuration?"), "Configuration Download Error", JOptionPane.ERROR_MESSAGE)) ? localConfig : null);
-				}
-			}
+//			if ((!askUpdatePermission || askPermission(("There is a more recent version of the selected Configuration available at " + remoteConfig.host + ".\nShould GoldenGATE download the new version?"), "Download new Version of Configuration?", JOptionPane.QUESTION_MESSAGE))) {
+//				try {
+//					return updateLocalConfiguration(localConfig, remoteConfig, dataBasePath, showStatusOnUpdate);
+//				}
+//				catch (IOException ioe) {
+//					System.out.println(" - Error downloading remote configuration: " + ioe.getClass().getName() + " (" + ioe.getMessage() + ")");
+//					ioe.printStackTrace(System.out);
+//					return ((!askUpdatePermission || askPermission(("An error occurred while downloading the selected Configuration:\n  " + ioe.getMessage() + ".\nShould GoldenGATE start with the older local Configuration?"), "Configuration Download Error", JOptionPane.ERROR_MESSAGE)) ? localConfig : null);
+//				}
+//			}
+			boolean updateConfig = true;
+			if (askUpdatePermission)
+				updateConfig = askPermission(("There is a more recent version of the selected Configuration available at " + remoteConfig.host + ".\nShould GoldenGATE download the new version?"), "Download new Version of Configuration?", JOptionPane.QUESTION_MESSAGE);
 			
-			//	if not, use local configuration
-			else return localConfig;
+			//	retain old local configuration
+			if (!updateConfig)
+				return localConfig;
+			
+			//	update local configuration
+			try {
+				return updateLocalConfiguration(localConfig, remoteConfig, dataBasePath, cachePolicy, askUpdatePermission, showStatusOnUpdate);
+			}
+			catch (IOException ioe) {
+				System.out.println(" - Error downloading remote configuration: " + ioe.getClass().getName() + " (" + ioe.getMessage() + ")");
+				ioe.printStackTrace(System.out);
+				boolean useLocalConfig = true;
+				if (askUpdatePermission)
+					useLocalConfig = askPermission(("An error occurred while downloading the selected Configuration:\n  " + ioe.getMessage() + ".\nShould GoldenGATE start with the older local Configuration?"), "Configuration Download Error", JOptionPane.ERROR_MESSAGE);
+				return (useLocalConfig ? localConfig : null);
+			}
 		}
+		
+		//	just use up to date local configuration
+		else return localConfig;
 	}
+	
+	/** cache update policy indicating to ignore all cached content in an existing local configuration on update */
+	public static final int CACHE_UPDATE_POLICY_IGNORE = 0;
+	
+	/** cache update policy indicating to copy all cached content from an existing local configuration on update */
+	public static final int CACHE_UPDATE_POLICY_COPY = 1;
+	
+	/** cache update policy indicating to scrub all cached content in an existing local configuration on update */
+	public static final int CACHE_UPDATE_POLICY_SCRUB = 2;
+	
+	/** cache update policy indicating to move over all cached content from an existing local configuration on update */
+	public static final int CACHE_UPDATE_POLICY_MOVE = (CACHE_UPDATE_POLICY_COPY | CACHE_UPDATE_POLICY_SCRUB);
 	
 	private static boolean askPermission(String message, String title, int messageType) {
 		if (GraphicsEnvironment.isHeadless())
 			return true; // if we're in a headless environment, there is probably no user waiting, so we can safely assume that updates are wanted, and that we are to start even if an update goes wrong
 		return (JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), message, title, JOptionPane.YES_NO_OPTION, messageType) == JOptionPane.YES_OPTION);
+	}
+//	private static int askPermission(String message, String title, int messageType, int cachePolicy) {
+//		if (GraphicsEnvironment.isHeadless())
+//			return cachePolicy; // if we're in a headless environment, there is probably no user waiting, so we can safely assume that updates are wanted, and that we are to start even if an update goes wrong
+//		
+//		JPanel askPanel = new JPanel(new BorderLayout(), true);
+//		askPanel.add(new JLabel(("<HTML>" + message.replaceAll("\\r?\\n", "<BR>") + "</HTML>"), JLabel.CENTER), BorderLayout.CENTER);
+//		
+//		JComboBox cachePolicySelector;
+//		if (cachePolicy < 0)
+//			cachePolicySelector = null;
+//		else {
+//			cachePolicySelector = new JComboBox(cachePolicyOptions);
+//			cachePolicySelector.setEditable(false);
+//			cachePolicySelector.setSelectedItem(cachePolicyOptions[cachePolicy]);
+//			
+//			JPanel cachePolicyPanel = new JPanel(new BorderLayout(), true);
+//			cachePolicyPanel.add(new JLabel("How to handle cached content in local configuration? ", JLabel.RIGHT), BorderLayout.CENTER);
+//			cachePolicyPanel.add(cachePolicySelector, BorderLayout.EAST);
+//			askPanel.add(cachePolicyPanel, BorderLayout.SOUTH);
+//		}
+//		
+//		int choice = JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), askPanel, title, JOptionPane.YES_NO_OPTION, messageType);
+//		if (choice != JOptionPane.YES_OPTION)
+//			return -1;
+//		
+//		if (cachePolicy < 0)
+//			return CACHE_UPDATE_POLICY_IGNORE; // we were not asked for a cache policy, so it does not matter
+//		
+//		return ((CachePolicyTray) cachePolicySelector.getSelectedItem()).policy; // return selected cache handling policy
+//	}
+	
+	private static class CachePolicy {
+		final boolean copy;
+		final boolean cleanup;
+		CachePolicy(int policy) {
+			this.copy = ((policy & CACHE_UPDATE_POLICY_COPY) != 0);
+			this.cleanup = ((policy & CACHE_UPDATE_POLICY_SCRUB) != 0);
+		}
+		boolean move() {
+			return (this.copy && this.cleanup);
+		}
+	}
+	
+	private static class CachePolicyTray {
+		final int policy;
+		final String label;
+		CachePolicyTray(int policy, String label) {
+			this.policy = policy;
+			this.label = label;
+		}
+		public String toString() {
+			return this.label;
+		}
+	}
+	
+	private static final CachePolicyTray[] cachePolicyOptions = {
+		new CachePolicyTray(CACHE_UPDATE_POLICY_IGNORE, "Ignore Altogether"),
+		new CachePolicyTray(CACHE_UPDATE_POLICY_COPY, "Copy Over"),
+		new CachePolicyTray(CACHE_UPDATE_POLICY_SCRUB, "Clean Up"),
+		new CachePolicyTray(CACHE_UPDATE_POLICY_IGNORE, "Move Along"),
+	};
+	
+	private static class CachePolicySelector {
+		final String path;
+		final String label;
+		final JComboBox policy = new JComboBox(cachePolicyOptions);
+		CachePolicySelector(String path, String label, int policy) {
+			this.path = path;
+			this.label = label;
+			this.policy.setEditable(false);
+			this.policy.setSelectedItem(cachePolicyOptions[policy]);
+		}
+		CachePolicy getCachePolicy() {
+			int policy = ((CachePolicyTray) this.policy.getSelectedItem()).policy;
+			return new CachePolicy(policy);
+		}
+	}
+	
+	private static HashMap askCachePolicies(ArrayList cacheFolderNames, Settings exCachePolicies, int defaultCachePolicy) {
+		CachePolicySelector[] cachePolicies = new CachePolicySelector[cacheFolderNames.size()];
+		
+		JPanel cachePolicyPanel = new JPanel(new GridLayout(0, 2), true);
+		StringVector cacheFolderNameParser = new StringVector();
+		for (int c = 0; c < cacheFolderNames.size(); c++) {
+			String cacheFolderName = ((String) cacheFolderNames.get(c));
+			String exCachePolicy = exCachePolicies.getSetting(getCachePolicyKey(cacheFolderName), ("" + defaultCachePolicy));
+			cacheFolderNameParser.parseAndAddElements(cacheFolderName, "/");
+			cacheFolderNameParser.remove(cacheFolderNameParser.size()-1);
+			while (cacheFolderNameParser.size() > 2) // using last two path steps before '/cache' as label
+				cacheFolderNameParser.remove(0);
+			cachePolicies[c] = new CachePolicySelector(cacheFolderName, cacheFolderNameParser.concatStrings(" / "), Integer.parseInt(exCachePolicy));
+			cacheFolderNameParser.clear();
+			JLabel cachePolicyLabel = new JLabel((cachePolicies[c].label + "  "), JLabel.RIGHT);
+			cachePolicyLabel.setToolTipText("Full path: " + cachePolicies[c].path);
+			cachePolicyPanel.add(cachePolicyLabel);
+			cachePolicyPanel.add(cachePolicies[c].policy);
+		}
+		
+		JCheckBox rememberCachePolicy = new JCheckBox("Remember my Choices?", true);
+		
+		JPanel askCachePolicyPanel = new JPanel(new BorderLayout(), true);
+		askCachePolicyPanel.add(new JLabel("<HTML><B>How to handle cached content in local configuration?</B></HTML>", JLabel.CENTER), BorderLayout.NORTH);
+		askCachePolicyPanel.add(cachePolicyPanel, BorderLayout.CENTER);
+		askCachePolicyPanel.add(rememberCachePolicy, BorderLayout.SOUTH);
+		
+		int choice = JOptionPane.showConfirmDialog(DialogPanel.getTopWindow(), askCachePolicyPanel, "How to Handle Cached Data?", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		if (choice != JOptionPane.OK_OPTION)
+			return null;
+		
+		HashMap folderCachePolicies = new HashMap();
+		for (int c = 0; c < cachePolicies.length; c++)
+			folderCachePolicies.put(cachePolicies[c].path, cachePolicies[c].getCachePolicy());
+		if (rememberCachePolicy.isSelected())
+			folderCachePolicies.put(rememberCachePolicies, rememberCachePolicies);
+		
+		return folderCachePolicies;
+	}
+	
+	private static final String rememberCachePolicies = "rememberCachePolicies";
+	
+	private static String getCachePolicyKey(String cacheFolderName) {
+		return cacheFolderName.replaceAll("[^a-zA-Z0-9\\-\\_]+", "_");
 	}
 	
 	/**
@@ -1117,10 +1335,13 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	 *            updates from
 	 * @param ggRootPath the root folder of the local GoldenGATE installation,
 	 *            to store the local configuration
+	 * @param cachePolicy how to handle cached content present in the local
+	 *            configuration?
 	 * @param showStatus show the download progress in a dialog?
 	 * @return a descriptor for the downloaded/updated local configuration
 	 */
-	private static ConfigurationDescriptor updateLocalConfiguration(ConfigurationDescriptor local, ConfigurationDescriptor remote, File ggRootPath, boolean showStatus) throws IOException {
+//	private static ConfigurationDescriptor updateLocalConfiguration(ConfigurationDescriptor local, ConfigurationDescriptor remote, File ggRootPath, int cachePolicy, boolean showStatus) throws IOException {
+	private static ConfigurationDescriptor updateLocalConfiguration(ConfigurationDescriptor local, ConfigurationDescriptor remote, File ggRootPath, int cachePolicy, boolean askCachePolicy, boolean showStatus) throws IOException {
 		File configRoot = new File(ggRootPath, GoldenGateConstants.CONFIG_FOLDER_NAME);
 		
 		//	create local config folder
@@ -1329,13 +1550,26 @@ public class ConfigurationUtils implements GoldenGateConstants {
 			timestamper.addElement("" + remote.timestamp);
 			timestamper.storeContent(new File(updateConfigFolder, GoldenGateConfiguration.TIMESTAMP_NAME));
 			
-			//	transfer caches from old local config (if given), and rename old local config
-			if (localConfigFolder != null) {
+			//	transfer caches from old local config (if given)
+			if ((localConfigFolder != null) && (cachePolicy != CACHE_UPDATE_POLICY_IGNORE)) {
 				
 				//	show status
-				System.out.println("Transfering caches");
+//				System.out.println("Transfering caches");
+//				if (dsd != null) {
+//					dsd.setStatusLabel("Transfering Caches");
+//					dsd.setProgressPercent(100);
+//				}
+				final String cacheActionLabel;
+				if (cachePolicy == CACHE_UPDATE_POLICY_COPY)
+					cacheActionLabel = "Copying";
+				else if (cachePolicy == CACHE_UPDATE_POLICY_SCRUB)
+					cacheActionLabel = "Cleaning up";
+				else if (cachePolicy == CACHE_UPDATE_POLICY_MOVE)
+					cacheActionLabel = "Transfering";
+				else cacheActionLabel = "Handling";
+				System.out.println(cacheActionLabel + " caches");
 				if (dsd != null) {
-					dsd.setStatusLabel("Transfering Caches");
+					dsd.setStatusLabel(cacheActionLabel + " Caches");
 					dsd.setProgressPercent(100);
 				}
 				
@@ -1352,15 +1586,18 @@ public class ConfigurationUtils implements GoldenGateConstants {
 				}
 				
 				String localConfigFolderPrefix = normalizePath(localConfigFolder.getAbsolutePath());
-				if (!localConfigFolderPrefix.endsWith("/")) localConfigFolderPrefix += "/";
-				int localConfigFolderPrefixPrefixLength = localConfigFolderPrefix.length();
+				if (!localConfigFolderPrefix.endsWith("/"))
+					localConfigFolderPrefix += "/";
+				int localConfigFolderPrefixLength = localConfigFolderPrefix.length();
 				
-				StringVector cacheFolderNames = new StringVector();
+//				StringVector cacheFolderNames = new StringVector();
+				TreeSet cacheFolderNameSet = new TreeSet();
 				while (possibleCacheParents.size() != 0) {
 					File folder = ((File) possibleCacheParents.removeFirst());
-					if ("cache".equals(folder.getName())) {
-						String cacheFolderName = normalizePath(folder.getAbsolutePath()).substring(localConfigFolderPrefixPrefixLength);
-						cacheFolderNames.addElementIgnoreDuplicates(cacheFolderName);
+					if ("cache".equalsIgnoreCase(folder.getName())) {
+						String cacheFolderName = normalizePath(folder.getAbsolutePath()).substring(localConfigFolderPrefixLength);
+//						cacheFolderNames.addElementIgnoreDuplicates(cacheFolderName);
+						cacheFolderNameSet.add(cacheFolderName);
 						System.out.println("   - found cache folder: " + cacheFolderName);
 					}
 					else {
@@ -1374,36 +1611,95 @@ public class ConfigurationUtils implements GoldenGateConstants {
 					}
 				}
 				
+				//	check which caches to actually update
+				ArrayList cacheFolderNames = new ArrayList();
+				for (Iterator cfnit = cacheFolderNameSet.iterator(); cfnit.hasNext();) {
+					String cacheFolderName = ((String) cfnit.next());
+					File sourceCacheFolder = new File(localConfigFolder, cacheFolderName);
+					if (sourceCacheFolder.exists() && sourceCacheFolder.isDirectory() && (sourceCacheFolder.listFiles().length != 0))
+						cacheFolderNames.add(cacheFolderName);
+				}
+				
+				//	parse cache policy
+				CachePolicy defaultCachePolicy = new CachePolicy(cachePolicy);
+				
+				//	ask for per-folder cache policies
+				HashMap folderCachePolicies = null;
+				if (askCachePolicy) {
+					
+					//	load any remembered cache policies
+					Settings storedCachePolicies = Settings.loadSettings(new File(localConfigFolder, "cachePolicies.cnfg"));
+					
+					//	prompt user
+					folderCachePolicies = askCachePolicies(cacheFolderNames, storedCachePolicies, cachePolicy);
+					
+					//	update cache settings from user response
+					if ((folderCachePolicies != null) && folderCachePolicies.containsKey(rememberCachePolicies)) {
+						//	TODO update settings from user response
+					}
+					
+					//	store cache policies if asked to
+					if ((folderCachePolicies == null) || folderCachePolicies.containsKey(rememberCachePolicies)) {
+						storedCachePolicies.storeAsText(new File(updateConfigFolder, "cachePolicies.cnfg"));
+					}
+				}
+				
 				//	transfer cached data
 				for (int c = 0; c < cacheFolderNames.size(); c++) {
-					String cacheFolderName = cacheFolderNames.get(c);
+					String cacheFolderName = ((String) cacheFolderNames.get(c));
 					File sourceCacheFolder = new File(localConfigFolder, cacheFolderName);
-					if (!sourceCacheFolder.exists() || !sourceCacheFolder.isDirectory() || (sourceCacheFolder.listFiles().length == 0))
-						continue;
+//					if (!sourceCacheFolder.exists() || !sourceCacheFolder.isDirectory() || (sourceCacheFolder.listFiles().length == 0))
+//						continue;
+//					
+					System.out.println(" - " + cacheActionLabel.toLowerCase() + " cache folder " + cacheFolderName);
+					if (dsd != null)
+						dsd.setStatusLabel(" - " + cacheActionLabel.toLowerCase() + " cache folder " + cacheFolderName);
 					
 					File targetCacheFolder = new File(updateConfigFolder, cacheFolderName);
-					targetCacheFolder.mkdirs();
+//					targetCacheFolder.mkdirs();
 					
-					System.out.println(" - copying cache folder " + cacheFolderName);
-					if (dsd != null)
-						dsd.setStatusLabel(" - copying cache folder " + cacheFolderName);
+					//	get policy
+					CachePolicy cacheFolderPolicy = ((folderCachePolicies == null) ? defaultCachePolicy : ((CachePolicy) folderCachePolicies.get(cacheFolderName)));
+					if (cacheFolderPolicy == null)
+						cacheFolderPolicy = defaultCachePolicy;
+					
+					//	try renaming first (way faster)
+					if (cacheFolderPolicy.move() && !targetCacheFolder.exists() && targetCacheFolder.getParentFile().exists() && targetCacheFolder.getParentFile().isDirectory()) try {
+						if (sourceCacheFolder.renameTo(targetCacheFolder)) {
+							System.out.println(" ==> handled via folder path renaming");
+							continue;
+						}
+						else System.out.println(" - folder path renaming failed, handling recursively");
+					}
+					catch (Exception e) {
+						System.out.println("Could not rename cache folder " + cacheFolderName + ": " + e.getMessage());
+						e.printStackTrace(System.out);
+					}
+					
+//					System.out.println(" - copying cache folder " + cacheFolderName);
+//					if (dsd != null)
+//						dsd.setStatusLabel(" - copying cache folder " + cacheFolderName);
 					Set monitor = new HashSet() {
 						public boolean add(Object o) {
 							if (super.add(o)) {
-								System.out.println(" - copying cached file " + ((String) o));
+//								System.out.println(" - copying cached file " + ((String) o));
+								System.out.println(" - " + cacheActionLabel.toLowerCase() + " cached file " + ((String) o));
 								return true;
 							}
 							else return false;
 						}
 					};
-					copyFolder(sourceCacheFolder, targetCacheFolder, monitor);
+//					copyFolder(sourceCacheFolder, targetCacheFolder, monitor);
+					if (handleCacheFolder(sourceCacheFolder, targetCacheFolder, monitor, cacheFolderPolicy))
+						sourceCacheFolder.delete();
 				}
-				
-				//	rename old local config
-				localConfigFolder.renameTo(new File(configRoot, (local.name + "." + local.timestamp + ".old")));
 			}
 			
-			//	rename updated config
+			//	rename old local config
+			if (localConfigFolder != null)
+				localConfigFolder.renameTo(new File(configRoot, (local.name + "." + local.timestamp + ".old")));
+			
+			//	rename downloaded/updated config
 			updateConfigFolder.renameTo(new File(configRoot, remote.name));
 			
 			//	return new local configuration pointing to the data just downloaded
@@ -1497,26 +1793,58 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		updateFile.renameTo(targetFile);
 	}
 	
-	private static final void copyFolder(File sourceRoot, File targetRoot, Set copied) throws IOException {
-		File[] toCopy = sourceRoot.listFiles(new FileFilter() {
-			public boolean accept(File file) {
-				return !file.getName().endsWith(".old");
-			}
-		});
-		for (int c = 0; c < toCopy.length; c++) {
-			if (toCopy[c].isFile()) {
-				if (copied.add(normalizePath(toCopy[c].getAbsolutePath())))
-					copyFile(toCopy[c].getName(), sourceRoot, targetRoot, copied);
+//	private static final void copyFolder(File sourceRoot, File targetRoot, Set copied) throws IOException {
+//		
+//		//	get files to copy
+//		File[] toCopy = sourceRoot.listFiles(new FileFilter() {
+//			public boolean accept(File file) {
+//				return !file.getName().endsWith(".old");
+//			}
+//		});
+//		
+//		//	copy recursively through directories
+//		for (int c = 0; c < toCopy.length; c++) {
+//			if (toCopy[c].isFile()) {
+//				if (copied.add(normalizePath(toCopy[c].getAbsolutePath())))
+//					copyFile(toCopy[c].getName(), sourceRoot, targetRoot);
+//			}
+//			else {
+//				File copy = new File(targetRoot, toCopy[c].getName());
+//				copy.mkdirs();
+//				copyFolder(toCopy[c], copy, copied);
+//			}
+//		}
+//	}
+	private static final boolean handleCacheFolder(File sourceRoot, File targetRoot, Set copied, CachePolicy cachePolicy) throws IOException {
+		
+		//	keep track of whether or not directories are really empty
+		boolean sourceRootEmpty = cachePolicy.cleanup;
+		
+		//	get files to handle (even the ones we don't need to copy, we might need to remove them)
+		File[] toHandle = sourceRoot.listFiles();
+		
+		//	handle directory tree recursively through directories
+		for (int c = 0; c < toHandle.length; c++) {
+			if (toHandle[c].isFile()) {
+				if (cachePolicy.copy && !toHandle[c].getName().endsWith(".old") && !toHandle[c].getName().endsWith(".new") && copied.add(normalizePath(toHandle[c].getAbsolutePath())))
+					copyFile(toHandle[c].getName(), sourceRoot, targetRoot);
+				if (cachePolicy.cleanup && !toHandle[c].delete())
+					sourceRootEmpty = false;
 			}
 			else {
-				File copy = new File(targetRoot, toCopy[c].getName());
-				copy.mkdirs();
-				copyFolder(toCopy[c], copy, copied);
+				File copyRoot = new File(targetRoot, toHandle[c].getName());
+				if (cachePolicy.copy)
+					copyRoot.mkdirs();
+				if (handleCacheFolder(toHandle[c], copyRoot, copied, cachePolicy) && !toHandle[c].delete())
+					sourceRootEmpty = false;
 			}
 		}
+		
+		//	did we completely empty source folder?
+		return sourceRootEmpty;
 	}
 	
-	private static final void copyFile(String fileName, File sourceRoot, File targetRoot, Set copied) throws IOException {
+	private static final void copyFile(String fileName, File sourceRoot, File targetRoot) throws IOException {
 		
 		//	open source file
 		File sourceFile = new File(sourceRoot, fileName);
@@ -1531,13 +1859,12 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		OutputStream target = new BufferedOutputStream(new FileOutputStream(targetFile));
 		
 		//	copy data
-		int count;
-		byte[] data = new byte[1204];
-		while ((count = source.read(data, 0, data.length)) != -1)
-			target.write(data, 0, count);
-		source.close();
+		byte[] buffer = new byte[1204];
+		for (int r; (r = source.read(buffer, 0, buffer.length)) != -1;)
+			target.write(buffer, 0, r);
 		target.flush();
 		target.close();
+		source.close();
 		
 		//	set modification data of copy
 		targetFile.setLastModified(sourceFile.lastModified());
@@ -2369,7 +2696,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		for (int f = 0; f < files.length; f++)
 			if ((filter == null) || filter.accept(files[f])) {
 				if (files[f].isDirectory()) {
-					if (!files[f].equals(rootPath) && !files[f].getName().startsWith(ATTIC_FOLDER_NAME) && !files[f].getName().toLowerCase().equals("cache") && !files[f].getName().endsWith(".old"))
+					if (!files[f].equals(rootPath) && !files[f].getName().startsWith(ATTIC_FOLDER_NAME) && !"cache".equalsIgnoreCase(files[f].getName()) && !files[f].getName().endsWith(".old"))
 						list.addContentIgnoreDuplicates(listFilesAbsolute(files[f], filter));
 				}
 				else if (!files[f].getName().matches(".*\\.[0-9]{8,}\\.(old|new)"))
@@ -3131,6 +3458,28 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	 *         parameters
 	 */
 	public static GoldenGateConfiguration getConfiguration(String configName, String configPath, String configHost, File baseFolder) throws IOException {
+		return getConfiguration(configName, configPath, configHost, baseFolder, CACHE_UPDATE_POLICY_MOVE);
+	}
+	
+	/**
+	 * Load a GoldenGATE Configuration with a given name from a choice of
+	 * locations. If the argument config path is not null, the configuration is
+	 * loaded statically, i.e. without online updates, etc. If the config path
+	 * starts with 'http://', the configuration is loaded from the web; if it
+	 * starts with './', the path is interpreted relative to the argument base
+	 * folder; otherwise, it is interpreted as an absolute path. If the config
+	 * path is null, the configuration is loaded from the base folder. If the
+	 * config host is not null, it is checked for updates.
+	 * @param configName the name of the configuration to load
+	 * @param configPath the path to load the configuration from
+	 * @param configHost the host to load the configuration from
+	 * @param baseFolder the base folder of the GoldenGATE installation
+	 * @param cachePolicy how to handle any cached content present in a local
+	 *            configuration in case of an update?
+	 * @return a GoldenGATE configuration loaded according to the specified
+	 *         parameters
+	 */
+	public static GoldenGateConfiguration getConfiguration(String configName, String configPath, String configHost, File baseFolder, int cachePolicy) throws IOException {
 		if (configName == null)
 			return null;
 		
@@ -3138,7 +3487,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		if (configPath != null) {
 			
 			//	URL based configuration, e.g. via ECS servlet
-			if (configPath.startsWith("http://")) {
+			if (configPath.startsWith("http://") || configPath.startsWith("https://")) {
 				String ggConfigUrl = (configPath + (configPath.endsWith("/") ? "" : "/") + configName);
 				return new UrlConfiguration(ggConfigUrl, configName);
 			}
@@ -3164,7 +3513,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 			ConfigurationDescriptor[] configurations = getConfigurations(configHost, baseFolder);
 			
 			//	find requested configuration
-			ConfigurationDescriptor configuration = getConfiguration(configurations, configName, baseFolder, false, false);
+			ConfigurationDescriptor configuration = getConfiguration(configurations, configName, baseFolder, cachePolicy, false, false);
 			if (configuration == null)
 				return null;
 			

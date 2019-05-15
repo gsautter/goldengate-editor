@@ -38,6 +38,9 @@
 	<property name="jar.editor" value="${dist.home}/GoldenGATE.jar" />
 	
 	<!-- path to the .jar file that shall be created -->
+	<property name="jar.editorbatch" value="${dist.home}/GoldenGateBatch.jar" />
+	
+	<!-- path to the .jar file that shall be created -->
 	<property name="jar.fileconfigmanager" value="${dist.home}/Plugins/FileConfigurationManager.jar" />
 	
 	<!-- path to the .jar file that shall be created -->
@@ -54,6 +57,9 @@
 	
 	<!-- path to the application .zip file that shall be created -->
 	<property name="app.editor" value="${dist.home}/GoldenGATE.zip" />
+	
+	<!-- path to the application .zip file that shall be created -->
+	<property name="app.editorbatch" value="${dist.home}/GoldenGateBatch.zip" />
 	
 	<!-- path to the application .zip file that shall be created -->
 	<property name="app.vpacker" value="${dist.home}/VersionPacker.editor.zip" />

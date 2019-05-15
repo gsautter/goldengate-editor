@@ -25,7 +25,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uka.ipd.idaho.goldenGate;
+package de.uka.ipd.idaho.goldenGate.application;
 
 
 import java.awt.BorderLayout;
@@ -85,8 +85,12 @@ import de.uka.ipd.idaho.easyIO.utilities.ApplicationHttpsEnabler;
 import de.uka.ipd.idaho.gamta.MutableAnnotation;
 import de.uka.ipd.idaho.gamta.util.ProgressMonitor;
 import de.uka.ipd.idaho.gamta.util.swing.ProgressMonitorDialog;
+import de.uka.ipd.idaho.goldenGate.GoldenGATE;
+import de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration;
 import de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration.ConfigurationDescriptor;
+import de.uka.ipd.idaho.goldenGate.GoldenGateConstants;
 import de.uka.ipd.idaho.goldenGate.GoldenGateConstants.StatusDialog.StatusDialogButton;
+import de.uka.ipd.idaho.goldenGate.GoldenGateGUI;
 import de.uka.ipd.idaho.goldenGate.configuration.ConfigurationUtils;
 import de.uka.ipd.idaho.goldenGate.configuration.FileConfiguration;
 import de.uka.ipd.idaho.goldenGate.configuration.UrlConfiguration;
@@ -95,7 +99,7 @@ import de.uka.ipd.idaho.goldenGate.plugins.DocumentFormat;
 import de.uka.ipd.idaho.stringUtils.StringVector;
 
 /**
- * startup program for running GoldenGATE as a standalone application
+ * Startup program for running GoldenGATE Document Editor as an application.
  * 
  * @author sautter
  */

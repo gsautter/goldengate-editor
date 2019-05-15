@@ -171,6 +171,9 @@ public interface GoldenGateConstants {
 	/** the setting holding the password for the www proxy (if any) */
 	public static final String PROXY_PWD = "PROXY_PWD";
 	
+	/** the name of the setting holding the initial memory for the Java VM */
+	public static final String LOOK_AND_FEEL_NAME = "LOOK_AND_FEEL";
+	
 	
 	/** the setting for the log file folder */
 	public static final String LOG_PATH = "LOG_PATH";
