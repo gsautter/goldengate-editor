@@ -10,11 +10,11 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Universität Karlsruhe (TH) nor the
+ *     * Neither the name of the Universitaet Karlsruhe (TH) nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY UNIVERSITÄT KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
+ * THIS SOFTWARE IS PROVIDED BY UNIVERSITAET KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
@@ -70,6 +70,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 
+import de.uka.ipd.idaho.easyIO.settings.Settings;
 import de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration;
 import de.uka.ipd.idaho.goldenGate.GoldenGateConstants;
 import de.uka.ipd.idaho.goldenGate.configuration.AbstractConfigurationManager.ExportStatusDialog;
@@ -93,6 +94,8 @@ public class FileConfiguration extends AbstractConfiguration {
 	private StringVector fileList = new StringVector();
 	private int cacheMaxBytes = 2048;
 	private Map byteCache = Collections.synchronizedMap(new HashMap());
+	
+	private StringVector localResourceList;
 	
 	/**
 	 * Constructor
@@ -160,6 +163,21 @@ public class FileConfiguration extends AbstractConfiguration {
 			}
 		});
 		this.fileList.sortLexicographically(false, false);
+		
+		if (this.isMaster)
+			this.localResourceList = null;
+		else {
+			this.localResourceList = new StringVector();
+			File localResourceFile = new File(this.basePath, "localResources.cnfg");
+			if (localResourceFile.exists()) try {
+				StringVector localResourceList = StringVector.loadList(localResourceFile);
+				this.localResourceList.addContent(localResourceList);
+			}
+			catch (IOException ioe) {
+				System.out.println("Could not load local resource list: " + ioe.getMessage());
+				ioe.printStackTrace(System.out);
+			}
+		}
 	}
 	
 	/* (non-Javadoc)
@@ -168,7 +186,8 @@ public class FileConfiguration extends AbstractConfiguration {
 	public String getPath() {
 		String absolutePath = this.basePath.getAbsolutePath().replaceAll("\\\\", "/");
 		int pathStart = absolutePath.indexOf(GoldenGateConstants.CONFIG_FOLDER_NAME + "/");
-		if (pathStart == -1) return ".";
+		if (pathStart == -1)
+			return ".";
 		else return (absolutePath.substring(pathStart));
 	}
 	
@@ -599,65 +618,53 @@ public class FileConfiguration extends AbstractConfiguration {
 		//	return reader for original stream otherwise
 		else {
 			bis.reset();
-			return new TimeoutInputStream(bis, dataName);
+			return new ConfigurationInputStream(bis, dataName);
 		}
 	}
 	
 	/**
-	 * wrapper for input streams to automatically close the wrapped stream if inactive for more than 30 seconds
+	 * Wrapper for input streams to automatically close the wrapped stream on finalization
 	 * 
 	 * @author sautter
 	 */
-	private class TimeoutInputStream extends FilterInputStream {
+	private class ConfigurationInputStream extends FilterInputStream {
 		private String dataName;
 		
-		private long lastRead = System.currentTimeMillis();
-		
-		TimeoutInputStream(InputStream in, String dn) {
+		ConfigurationInputStream(InputStream in, String dataName) {
 			super(in);
-			this.dataName = dn;
-			
-			//	start watchdog
-			new Thread() {
-				public void run() {
-					
-					//	watch out if stream closed externally
-					while (lastRead != -1) {
-						
-						//	close stream if timeout expired
-						if ((System.currentTimeMillis() - lastRead) > 30000) {
-							try {
-								System.out.println("Auto-Closing InputStream for '" + dataName + "'");
-								close();
-							} catch (IOException ioe) {}
-							return;
-						}
-						
-						//	wait 1 second before checking again
-						try {
-							sleep(1000);
-						} catch (InterruptedException ie) {}
-						
-					}
-				}
-			}.start();
+			this.dataName = dataName;
+		}
+		
+		public int read() throws IOException {
+			if (this.dataName == null)
+				throw new IOException("Stream closed");
+			return super.read();
+		}
+		
+		public int read(byte[] b) throws IOException {
+			if (this.dataName == null)
+				throw new IOException("Stream closed");
+			return super.read(b);
+		}
+		
+		public int read(byte[] b, int off, int len) throws IOException {
+			if (this.dataName == null)
+				throw new IOException("Stream closed");
+			return super.read(b, off, len);
 		}
 		
 		public void close() throws IOException {
-			this.lastRead = -1;
+			if (this.dataName == null)
+				return;
 			super.close();
+			this.dataName = null;
 		}
-
-		public int read() throws IOException {
-			this.lastRead = System.currentTimeMillis();
-			return super.read();
-		}
-
+		
 		protected void finalize() throws Throwable {
-			if (this.lastRead != -1) {
-				System.out.println("Auto-Closing InputStream on Finalization for '" + this.dataName + "'");
-				this.close();
-			}
+			if (this.dataName == null)
+				return;
+			System.out.println("Auto-closing InputStream on finalization for '" + this.dataName + "'");
+			this.close();
 		}
 	}
 	
@@ -706,15 +713,15 @@ public class FileConfiguration extends AbstractConfiguration {
 		}
 		
 		//	return output stream
-		return new TimeoutOutputStream(dataName, dataFile.getName(), dataFileParent);
+		return new ConfigurationOutputStream(dataName, dataFile.getName(), dataFileParent);
 	}
 	
 	/**
-	 * wrapper for output streams to automatically flush and close the wrapped stream if inactive for more than 30 seconds
+	 * Wrapper for output streams to automatically flush and close the wrapped stream on finalization
 	 * 
 	 * @author sautter
 	 */
-	private class TimeoutOutputStream extends OutputStream {
+	private class ConfigurationOutputStream extends OutputStream {
 		private String dataName;
 		private long dataTime;
 		private String dataFileName;
@@ -722,9 +729,8 @@ public class FileConfiguration extends AbstractConfiguration {
 		
 		private File dataOutFile;
 		private OutputStream dataOut;
-		private long lastWritten = System.currentTimeMillis();
 		
-		TimeoutOutputStream(String dataName, String dataFileName, File dataFileParent) throws IOException {
+		ConfigurationOutputStream(String dataName, String dataFileName, File dataFileParent) throws IOException {
 			
 			//	store basic data
 			this.dataName = dataName;
@@ -742,61 +748,77 @@ public class FileConfiguration extends AbstractConfiguration {
 				throw new IOException("Cannot write '" + this.dataOutFile.getAbsolutePath() + "': " + re.getMessage());
 			}
 			this.dataOut = new FileOutputStream(this.dataOutFile);
-			
-			//	start watchdog
-			new Thread() {
-				public void run() {
-					
-					//	watch out if stream closed externally
-					while (lastWritten != -1) {
-						
-						//	close stream if timeout expired
-						if ((System.currentTimeMillis() - lastWritten) > (30 * 1000)) {
-							try {
-								System.out.println("Auto-Closing OutputStream for '" + TimeoutOutputStream.this.dataName + "'");
-								flush();
-								close();
-							} catch (IOException ioe) {}
-							return;
-						}
-						
-						//	wait 1 second before checking again
-						try {
-							sleep(1000);
-						} catch (InterruptedException ie) {}
-						
-					}
-				}
-			}.start();
+		}
+		
+		public void write(int b) throws IOException {
+			if (this.dataOut == null)
+				throw new IOException("Stream closed");
+			this.dataOut.write(b);
+		}
+		
+		public void write(byte[] b) throws IOException {
+			if (this.dataOut == null)
+				throw new IOException("Stream closed");
+			this.dataOut.write(b);
+		}
+		
+		public void write(byte[] b, int off, int len) throws IOException {
+			if (this.dataOut == null)
+				throw new IOException("Stream closed");
+			this.dataOut.write(b, off, len);
 		}
 		
 		public void flush() throws IOException {
+			if (this.dataOut == null)
+				throw new IOException("Stream closed");
 			this.dataOut.flush();
 		}
 		
 		public void close() throws IOException {
-			this.lastWritten = -1;
+			if (this.dataOut == null)
+				return;
 			this.dataOut.close();
+			this.dataOut = null;
 			File existingDataFile = new File(this.dataFileParent, this.dataFileName);
 			if (existingDataFile.exists())
 				existingDataFile.renameTo(new File(this.dataFileParent, (this.dataFileName + "." + this.dataTime + ".old")));
+			else if (localResourceList != null)
+				localResourceList.addElementIgnoreDuplicates(this.dataName);
 			this.dataOutFile.renameTo(new File(this.dataFileParent, this.dataFileName));
 			byteCache.remove(this.dataName);
 			fileList.addElementIgnoreDuplicates(this.dataName);
 			fileList.sortLexicographically(false, false);
 		}
 		
-		public void write(int b) throws IOException {
-			this.lastWritten = System.currentTimeMillis();
-			this.dataOut.write(b);
-		}
-		
 		protected void finalize() throws Throwable {
-			if (this.lastWritten != -1) {
-				System.out.println("Auto-Closing OutputStream on Finalization for '" + this.dataName + "'");
-				this.flush();
-				this.close();
-			}
+			if (this.dataOut == null)
+				return;
+			System.out.println("Auto-closing OutputStream on finalization for '" + this.dataName + "'");
+			this.flush();
+			this.close();
+		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see de.uka.ipd.idaho.goldenGate.configuration.AbstractConfiguration#storeSettings(de.uka.ipd.idaho.easyIO.settings.Settings)
+	 */
+	public void storeSettings(Settings settings) throws IOException {
+		super.storeSettings(settings);
+		if (this.localResourceList == null)
+			return;
+		if (this.localResourceList.isEmpty())
+			return;
+		File localResourceFile = new File(this.basePath, "localResources.cnfg");
+		if (localResourceFile.exists()) {
+			localResourceFile.renameTo(new File(this.basePath, ("localResources.cnfg" + "." + System.currentTimeMillis() + ".old")));
+			localResourceFile = new File(this.basePath, "localResources.cnfg");
+		}
+		try {
+			this.localResourceList.storeContent(localResourceFile);
+		}
+		catch (IOException ioe) {
+			System.out.println("Could not store local resource list: " + ioe.getMessage());
+			ioe.printStackTrace(System.out);
 		}
 	}
 	
@@ -807,6 +829,8 @@ public class FileConfiguration extends AbstractConfiguration {
 		File file = this.getFile(dataName);
 		this.byteCache.remove(dataName);
 		this.fileList.removeAll(dataName);
+		if (this.localResourceList != null)
+			this.localResourceList.remove(dataName);
 		return (!file.exists() || file.delete());
 	}
 	

@@ -10,11 +10,11 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Universität Karlsruhe (TH) nor the
+ *     * Neither the name of the Universitaet Karlsruhe (TH) nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY UNIVERSITÄT KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
+ * THIS SOFTWARE IS PROVIDED BY UNIVERSITAET KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
@@ -54,9 +54,10 @@ import de.uka.ipd.idaho.stringUtils.StringVector;
  * after loading or before saving. This can range from a parser for specific
  * numeric values like dates to run after loading to an XML schema validator to
  * run before saving. This abstract class provides the facilities for
- * configuring which document processor to use (a settings panel), for exporting
- * that document processor along with the specific document format, and the
- * applyDocumentProcessor() for running the document processor on a document.
+ * configuring which document processor to use (a settings panel), for
+ * exporting that document processor along with the specific document format,
+ * and the applyDocumentProcessor() method for running the document processor
+ * on a document.
  * 
  * @author sautter
  */

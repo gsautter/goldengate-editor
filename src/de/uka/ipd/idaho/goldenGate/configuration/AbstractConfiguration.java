@@ -10,11 +10,11 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Universität Karlsruhe (TH) nor the
+ *     * Neither the name of the Universitaet Karlsruhe (TH) nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY UNIVERSITÄT KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
+ * THIS SOFTWARE IS PROVIDED BY UNIVERSITAET KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
@@ -61,13 +61,9 @@ import de.uka.ipd.idaho.goldenGate.plugins.PluginDataProviderPrefixBased;
  */
 public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 	
-	/**
-	 * the name of the configuration
-	 */
+	/** the name of the configuration */
 	protected final String name;
 	
-//	private BufferedWriter logWriter = null;
-//	
 	private GoldenGatePlugin[] plugins = null;
 	
 	/**
@@ -93,13 +89,6 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 	protected AbstractConfiguration(String name, File logFile) {
 		this.name = name;
 		this.baseDataProvider = new PluginDataProviderConfigurationBased(this);
-//		if (logFile != null) try {
-//			if (!logFile.exists()) {
-//				logFile.getParentFile().mkdirs();
-//				logFile.createNewFile();
-//			}
-//			this.logWriter = new BufferedWriter(new FileWriter(logFile, true));
-//		} catch (Exception e) {}
 	}
 	
 	/* (non-Javadoc)
@@ -114,13 +103,6 @@ public abstract class AbstractConfiguration implements GoldenGateConfiguration {
 	 */
 	public void writeLog(String entry) {
 		System.out.println(entry);
-//		if (this.logWriter != null) {
-//			try {
-//				this.logWriter.write(entry);
-//				this.logWriter.newLine();
-//				this.logWriter.flush();
-//			} catch (IOException e) {}
-//		}
 	}
 	
 	/* (non-Javadoc)

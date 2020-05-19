@@ -10,11 +10,11 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Universität Karlsruhe (TH) nor the
+ *     * Neither the name of the Universitaet Karlsruhe (TH) nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY UNIVERSITÄT KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
+ * THIS SOFTWARE IS PROVIDED BY UNIVERSITAET KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
@@ -1201,9 +1201,11 @@ public class ConfigurationUtils implements GoldenGateConstants {
 //	}
 	
 	private static class CachePolicy {
+		final int policy;
 		final boolean copy;
 		final boolean cleanup;
 		CachePolicy(int policy) {
+			this.policy = policy;
 			this.copy = ((policy & CACHE_UPDATE_POLICY_COPY) != 0);
 			this.cleanup = ((policy & CACHE_UPDATE_POLICY_SCRUB) != 0);
 		}
@@ -1340,7 +1342,6 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	 * @param showStatus show the download progress in a dialog?
 	 * @return a descriptor for the downloaded/updated local configuration
 	 */
-//	private static ConfigurationDescriptor updateLocalConfiguration(ConfigurationDescriptor local, ConfigurationDescriptor remote, File ggRootPath, int cachePolicy, boolean showStatus) throws IOException {
 	private static ConfigurationDescriptor updateLocalConfiguration(ConfigurationDescriptor local, ConfigurationDescriptor remote, File ggRootPath, int cachePolicy, boolean askCachePolicy, boolean showStatus) throws IOException {
 		File configRoot = new File(ggRootPath, GoldenGateConstants.CONFIG_FOLDER_NAME);
 		
@@ -1370,7 +1371,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 				//	report status
 				System.out.println(" - collecting data folders");
 				if (dsd != null)
-					dsd.setStatusLabel("Collecting Data Folders");
+					dsd.setStepLabel("Collecting Data Folders");
 				
 				//	read file list
 				ZipEntry configZipEntry = configZipFile.getEntry(GoldenGateConfiguration.FILE_INDEX_NAME);
@@ -1384,6 +1385,8 @@ public class ConfigurationUtils implements GoldenGateConstants {
 				fileIndexReader.close();
 				
 				//	extract zipped files one by one
+				if (dsd != null)
+					dsd.setStepLabel("Un-Zipping Data");
 				for (int f = 0; f < fileList.size(); f++) {
 					fileName = fileList.get(f);
 					configZipEntry = configZipFile.getEntry(fileName);
@@ -1391,7 +1394,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 					//	report status
 					System.out.println(" - un-zipping " + fileName);
 					if (dsd != null) {
-						dsd.setStatusLabel("Un-zipping " + fileName);
+						dsd.setStatusLabel(" - un-zipping " + fileName);
 						dsd.setProgressPercent((100 * f) / fileList.size());
 					}
 					
@@ -1420,13 +1423,15 @@ public class ConfigurationUtils implements GoldenGateConstants {
 				
 				//	report status
 				if (dsd != null)
-					dsd.setStatusLabel("Extracting File List");
+					dsd.setStepLabel("Extracting File List");
 				
 				//	download configuration descriptor
 				try {
 					BufferedReader configReader = new BufferedReader(new InputStreamReader(new URL(remote.host + (remote.host.endsWith("/") ? "" : "/") + remote.name + "/" + GoldenGateConfiguration.DESCRIPTOR_FILE_NAME).openStream(), "UTF-8"));
 					Configuration config = Configuration.readConfiguration(configReader);
 					System.out.println(" - extracting file list from XML descriptor");
+					if (dsd != null)
+						dsd.setStatusLabel(" - extracting file list from XML descriptor");
 					
 					//	extract file list and timestamps
 					fileList.addElementIgnoreDuplicates(config.settingsPath);
@@ -1493,13 +1498,15 @@ public class ConfigurationUtils implements GoldenGateConstants {
 				
 				
 				//	copy remote files one by one
+				if (dsd != null)
+					dsd.setStepLabel("Downloading Data");
 				for (int f = 0; f < fileList.size(); f++) {
 					String fileName = fileList.get(f);
 					
 					//	report status
 					System.out.println(" - downloading " + fileName);
 					if (dsd != null) {
-						dsd.setStatusLabel("Downloading " + fileName);
+						dsd.setStatusLabel(" - downloading " + fileName);
 						dsd.setProgressPercent((100 * f) / fileList.size());
 					}
 					
@@ -1550,154 +1557,32 @@ public class ConfigurationUtils implements GoldenGateConstants {
 			timestamper.addElement("" + remote.timestamp);
 			timestamper.storeContent(new File(updateConfigFolder, GoldenGateConfiguration.TIMESTAMP_NAME));
 			
+			//	transfer user defined resources (to prevent losing them on update by leaving them behind)
+			transferLocalResources(localConfigFolder, updateConfigFolder, dsd);
+			
 			//	transfer caches from old local config (if given)
-			if ((localConfigFolder != null) && (cachePolicy != CACHE_UPDATE_POLICY_IGNORE)) {
-				
-				//	show status
-//				System.out.println("Transfering caches");
-//				if (dsd != null) {
-//					dsd.setStatusLabel("Transfering Caches");
-//					dsd.setProgressPercent(100);
-//				}
-				final String cacheActionLabel;
-				if (cachePolicy == CACHE_UPDATE_POLICY_COPY)
-					cacheActionLabel = "Copying";
-				else if (cachePolicy == CACHE_UPDATE_POLICY_SCRUB)
-					cacheActionLabel = "Cleaning up";
-				else if (cachePolicy == CACHE_UPDATE_POLICY_MOVE)
-					cacheActionLabel = "Transfering";
-				else cacheActionLabel = "Handling";
-				System.out.println(cacheActionLabel + " caches");
-				if (dsd != null) {
-					dsd.setStatusLabel(cacheActionLabel + " Caches");
-					dsd.setProgressPercent(100);
-				}
-				
-				//	collect cache folders
-				System.out.println(" - collecting cache folders");
-				if (dsd != null)
-					dsd.setStatusLabel(" - collecting cache folders");
-				
-				LinkedList possibleCacheParents = new LinkedList();
-				for (int f = 0; f < dataFolders.size(); f++) {
-					File dataFolder = new File(localConfigFolder, dataFolders.get(f));
-					if (dataFolder.exists() && dataFolder.isDirectory())
-						possibleCacheParents.addLast(dataFolder);
-				}
-				
-				String localConfigFolderPrefix = normalizePath(localConfigFolder.getAbsolutePath());
-				if (!localConfigFolderPrefix.endsWith("/"))
-					localConfigFolderPrefix += "/";
-				int localConfigFolderPrefixLength = localConfigFolderPrefix.length();
-				
-//				StringVector cacheFolderNames = new StringVector();
-				TreeSet cacheFolderNameSet = new TreeSet();
-				while (possibleCacheParents.size() != 0) {
-					File folder = ((File) possibleCacheParents.removeFirst());
-					if ("cache".equalsIgnoreCase(folder.getName())) {
-						String cacheFolderName = normalizePath(folder.getAbsolutePath()).substring(localConfigFolderPrefixLength);
-//						cacheFolderNames.addElementIgnoreDuplicates(cacheFolderName);
-						cacheFolderNameSet.add(cacheFolderName);
-						System.out.println("   - found cache folder: " + cacheFolderName);
-					}
-					else {
-						File[] subFolders = folder.listFiles(new FileFilter() {
-							public boolean accept(File file) {
-								return file.isDirectory();
-							}
-						});
-						for (int s = 0; s < subFolders.length; s++)
-							possibleCacheParents.addLast(subFolders[s]);
-					}
-				}
-				
-				//	check which caches to actually update
-				ArrayList cacheFolderNames = new ArrayList();
-				for (Iterator cfnit = cacheFolderNameSet.iterator(); cfnit.hasNext();) {
-					String cacheFolderName = ((String) cfnit.next());
-					File sourceCacheFolder = new File(localConfigFolder, cacheFolderName);
-					if (sourceCacheFolder.exists() && sourceCacheFolder.isDirectory() && (sourceCacheFolder.listFiles().length != 0))
-						cacheFolderNames.add(cacheFolderName);
-				}
-				
-				//	parse cache policy
-				CachePolicy defaultCachePolicy = new CachePolicy(cachePolicy);
-				
-				//	ask for per-folder cache policies
-				HashMap folderCachePolicies = null;
-				if (askCachePolicy) {
-					
-					//	load any remembered cache policies
-					Settings storedCachePolicies = Settings.loadSettings(new File(localConfigFolder, "cachePolicies.cnfg"));
-					
-					//	prompt user
-					folderCachePolicies = askCachePolicies(cacheFolderNames, storedCachePolicies, cachePolicy);
-					
-					//	update cache settings from user response
-					if ((folderCachePolicies != null) && folderCachePolicies.containsKey(rememberCachePolicies)) {
-						//	TODO update settings from user response
-					}
-					
-					//	store cache policies if asked to
-					if ((folderCachePolicies == null) || folderCachePolicies.containsKey(rememberCachePolicies)) {
-						storedCachePolicies.storeAsText(new File(updateConfigFolder, "cachePolicies.cnfg"));
-					}
-				}
-				
-				//	transfer cached data
-				for (int c = 0; c < cacheFolderNames.size(); c++) {
-					String cacheFolderName = ((String) cacheFolderNames.get(c));
-					File sourceCacheFolder = new File(localConfigFolder, cacheFolderName);
-//					if (!sourceCacheFolder.exists() || !sourceCacheFolder.isDirectory() || (sourceCacheFolder.listFiles().length == 0))
-//						continue;
-//					
-					System.out.println(" - " + cacheActionLabel.toLowerCase() + " cache folder " + cacheFolderName);
-					if (dsd != null)
-						dsd.setStatusLabel(" - " + cacheActionLabel.toLowerCase() + " cache folder " + cacheFolderName);
-					
-					File targetCacheFolder = new File(updateConfigFolder, cacheFolderName);
-//					targetCacheFolder.mkdirs();
-					
-					//	get policy
-					CachePolicy cacheFolderPolicy = ((folderCachePolicies == null) ? defaultCachePolicy : ((CachePolicy) folderCachePolicies.get(cacheFolderName)));
-					if (cacheFolderPolicy == null)
-						cacheFolderPolicy = defaultCachePolicy;
-					
-					//	try renaming first (way faster)
-					if (cacheFolderPolicy.move() && !targetCacheFolder.exists() && targetCacheFolder.getParentFile().exists() && targetCacheFolder.getParentFile().isDirectory()) try {
-						if (sourceCacheFolder.renameTo(targetCacheFolder)) {
-							System.out.println(" ==> handled via folder path renaming");
-							continue;
-						}
-						else System.out.println(" - folder path renaming failed, handling recursively");
-					}
-					catch (Exception e) {
-						System.out.println("Could not rename cache folder " + cacheFolderName + ": " + e.getMessage());
-						e.printStackTrace(System.out);
-					}
-					
-//					System.out.println(" - copying cache folder " + cacheFolderName);
-//					if (dsd != null)
-//						dsd.setStatusLabel(" - copying cache folder " + cacheFolderName);
-					Set monitor = new HashSet() {
-						public boolean add(Object o) {
-							if (super.add(o)) {
-//								System.out.println(" - copying cached file " + ((String) o));
-								System.out.println(" - " + cacheActionLabel.toLowerCase() + " cached file " + ((String) o));
-								return true;
-							}
-							else return false;
-						}
-					};
-//					copyFolder(sourceCacheFolder, targetCacheFolder, monitor);
-					if (handleCacheFolder(sourceCacheFolder, targetCacheFolder, monitor, cacheFolderPolicy))
-						sourceCacheFolder.delete();
-				}
-			}
+			handleCacheFolders(localConfigFolder, dataFolders, cachePolicy, askCachePolicy, updateConfigFolder, dsd);
 			
 			//	rename old local config
-			if (localConfigFolder != null)
-				localConfigFolder.renameTo(new File(configRoot, (local.name + "." + local.timestamp + ".old")));
+			if (localConfigFolder != null) {
+				File oldLocalConfigFolder = new File(configRoot, (local.name + "." + local.timestamp + ".old"));
+				for (int a = 0; a < 10; a++) {
+					if (localConfigFolder.renameTo(oldLocalConfigFolder)) {
+						oldLocalConfigFolder = null;
+						break;
+					}
+					System.out.println("Failed to rename old configutation folder, retrying in " + (a+1) + " seconds.");
+					if (dsd != null) {
+						dsd.setStatusLabel("Failed to rename old configutation folder.");
+						dsd.setStatusLabel("Will retry in " + (a+1) + " seconds.");
+					}
+					try {
+						Thread.sleep(1000 * (a+1));
+					} catch (InterruptedException ie) {}
+				}
+				if (oldLocalConfigFolder != null)
+					throw new IOException("Failed to rename old configuration folder " + localConfigFolder.getAbsolutePath());
+			}
 			
 			//	rename downloaded/updated config
 			updateConfigFolder.renameTo(new File(configRoot, remote.name));
@@ -1815,7 +1700,203 @@ public class ConfigurationUtils implements GoldenGateConstants {
 //			}
 //		}
 //	}
-	private static final boolean handleCacheFolder(File sourceRoot, File targetRoot, Set copied, CachePolicy cachePolicy) throws IOException {
+	
+	private static void transferLocalResources(File localConfigFolder, File updateConfigFolder, DownloadStatusDialog dsd) throws IOException {
+		if (localConfigFolder == null)
+			return;
+		File localResourcesFile = new File(localConfigFolder, "localResources.cnfg");
+		if (!localResourcesFile.exists())
+			return;
+		
+		//	transfer local resources
+		System.out.println(" - transferring local resources");
+		if (dsd != null)
+			dsd.setStepLabel("Transferring Local Resources");
+		StringVector localResourceList = StringVector.loadList(localResourcesFile);
+		for (int r = 0; r < localResourceList.size(); r++) try {
+			String localResourceName = localResourceList.get(r);
+			
+			//	create and check source (clean up list if not found)
+			File localResourceFile = new File(localConfigFolder, localResourceName);
+			if (localResourceFile.exists()) {
+				localResourceList.remove(r--);
+				continue;
+			}
+			
+			//	create and check target (might have come in with update)
+			File updateResourceFile = new File(updateConfigFolder, localResourceName);
+			if (updateResourceFile.exists())
+				continue;
+			
+			//	perform transfer
+			System.out.println("   - transferring " + localResourceName);
+			if (dsd != null)
+				dsd.setStepLabel(" - transferring " + localResourceName);
+			copyFile(localResourceFile, updateResourceFile);
+		}
+		catch (Exception e) {
+			if (dsd == null)
+				continue;
+			int choice = JOptionPane.showConfirmDialog(dsd, ("Failed to copy locally created file '" + localResourceList.get(r) + "'\r\nContinue with update?"), "Copying Local Resource Failed", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+			if (choice != JOptionPane.NO_OPTION)
+				continue;
+			if (e instanceof IOException)
+				throw ((IOException) e);
+			else throw new IOException(e);
+		}
+		
+		//	transfer resource list proper
+		System.out.println("   - transferring local resource list");
+		if (dsd != null)
+			dsd.setStepLabel(" - transferring local resource list");
+		File updateResourcesFile = new File(updateConfigFolder, "localResources.cnfg");
+		localResourceList.storeContent(updateResourcesFile);
+	}
+	
+	private static void handleCacheFolders(File localConfigFolder, StringVector dataFolders, int cachePolicy, boolean askCachePolicy, File updateConfigFolder, final DownloadStatusDialog dsd) throws IOException {
+		if (localConfigFolder == null)
+			return;
+		if (cachePolicy == CACHE_UPDATE_POLICY_IGNORE)
+			return;
+		
+		//	show status
+		final String cacheActionLabel;
+		if (cachePolicy == CACHE_UPDATE_POLICY_COPY)
+			cacheActionLabel = "Copying";
+		else if (cachePolicy == CACHE_UPDATE_POLICY_SCRUB)
+			cacheActionLabel = "Cleaning up";
+		else if (cachePolicy == CACHE_UPDATE_POLICY_MOVE)
+			cacheActionLabel = "Transfering";
+		else cacheActionLabel = "Handling";
+		System.out.println(cacheActionLabel + " caches");
+		if (dsd != null) {
+			dsd.setStepLabel(cacheActionLabel + " Caches");
+			dsd.setProgressPercent(100);
+		}
+		
+		//	collect cache folders
+		System.out.println(" - collecting cache folders");
+		if (dsd != null)
+			dsd.setStatusLabel(" - collecting cache folders");
+		LinkedList possibleCacheParents = new LinkedList();
+		for (int f = 0; f < dataFolders.size(); f++) {
+			File dataFolder = new File(localConfigFolder, dataFolders.get(f));
+			if (dataFolder.exists() && dataFolder.isDirectory())
+				possibleCacheParents.addLast(dataFolder);
+		}
+		
+		String localConfigFolderPrefix = normalizePath(localConfigFolder.getAbsolutePath());
+		if (!localConfigFolderPrefix.endsWith("/"))
+			localConfigFolderPrefix += "/";
+		int localConfigFolderPrefixLength = localConfigFolderPrefix.length();
+		
+		TreeSet cacheFolderNameSet = new TreeSet();
+		while (possibleCacheParents.size() != 0) {
+			File folder = ((File) possibleCacheParents.removeFirst());
+			if ("cache".equalsIgnoreCase(folder.getName())) {
+				String cacheFolderName = normalizePath(folder.getAbsolutePath()).substring(localConfigFolderPrefixLength);
+				cacheFolderNameSet.add(cacheFolderName);
+				System.out.println("   - found cache folder: " + cacheFolderName);
+			}
+			else {
+				File[] subFolders = folder.listFiles(new FileFilter() {
+					public boolean accept(File file) {
+						return file.isDirectory();
+					}
+				});
+				for (int s = 0; s < subFolders.length; s++)
+					possibleCacheParents.addLast(subFolders[s]);
+			}
+		}
+		
+		//	check which caches to actually update
+		System.out.println(" - checking cache folders");
+		if (dsd != null)
+			dsd.setStatusLabel(" - checking cache folders");
+		ArrayList cacheFolderNames = new ArrayList();
+		for (Iterator cfnit = cacheFolderNameSet.iterator(); cfnit.hasNext();) {
+			String cacheFolderName = ((String) cfnit.next());
+			File sourceCacheFolder = new File(localConfigFolder, cacheFolderName);
+			if (sourceCacheFolder.exists() && sourceCacheFolder.isDirectory() && (sourceCacheFolder.listFiles().length != 0))
+				cacheFolderNames.add(cacheFolderName);
+		}
+		
+		//	parse cache policy
+		CachePolicy defaultCachePolicy = new CachePolicy(cachePolicy);
+		
+		//	ask for per-folder cache policies
+		HashMap folderCachePolicies = null;
+		if (askCachePolicy) {
+			
+			//	load any remembered cache policies
+			Settings storedCachePolicies = Settings.loadSettings(new File(localConfigFolder, "cachePolicies.cnfg"));
+			
+			//	prompt user
+			folderCachePolicies = askCachePolicies(cacheFolderNames, storedCachePolicies, cachePolicy);
+			
+			//	update cache settings from user response
+			if ((folderCachePolicies != null) && folderCachePolicies.containsKey(rememberCachePolicies)) {
+				storedCachePolicies.clear();
+				for (Iterator cfnit = folderCachePolicies.keySet().iterator(); cfnit.hasNext();) {
+					String cacheFolderName = ((String) cfnit.next());
+					if (rememberCachePolicies.equals(cacheFolderName))
+						continue;
+					CachePolicy cacheFolderPolicy = ((CachePolicy) folderCachePolicies.get(cacheFolderName));
+					if (cacheFolderPolicy == null)
+						continue;
+					storedCachePolicies.setSetting(getCachePolicyKey(cacheFolderName), ("" + cacheFolderPolicy.policy));
+				}
+			}
+			
+			//	store cache policies if asked to
+			if ((folderCachePolicies == null) || folderCachePolicies.containsKey(rememberCachePolicies))
+				storedCachePolicies.storeAsText(new File(updateConfigFolder, "cachePolicies.cnfg"));
+		}
+		
+		//	transfer cached data
+		for (int c = 0; c < cacheFolderNames.size(); c++) {
+			String cacheFolderName = ((String) cacheFolderNames.get(c));
+			System.out.println(" - " + cacheActionLabel.toLowerCase() + " cache folder " + cacheFolderName);
+			if (dsd != null)
+				dsd.setStatusLabel(" - " + cacheActionLabel.toLowerCase() + " cache folder " + cacheFolderName);
+			File sourceCacheFolder = new File(localConfigFolder, cacheFolderName);
+			File targetCacheFolder = new File(updateConfigFolder, cacheFolderName);
+			
+			//	get policy
+			CachePolicy cacheFolderPolicy = ((folderCachePolicies == null) ? defaultCachePolicy : ((CachePolicy) folderCachePolicies.get(cacheFolderName)));
+			if (cacheFolderPolicy == null)
+				cacheFolderPolicy = defaultCachePolicy;
+			
+			//	try renaming first (way faster)
+			if (cacheFolderPolicy.move() && !targetCacheFolder.exists() && targetCacheFolder.getParentFile().exists() && targetCacheFolder.getParentFile().isDirectory()) try {
+				if (sourceCacheFolder.renameTo(targetCacheFolder)) {
+					System.out.println(" ==> handled via folder path renaming");
+					continue;
+				}
+				else System.out.println(" - folder path renaming failed, handling recursively");
+			}
+			catch (Exception e) {
+				System.out.println("Could not rename cache folder " + cacheFolderName + ": " + e.getMessage());
+				e.printStackTrace(System.out);
+			}
+			
+			Set monitor = new HashSet() {
+				public boolean add(Object o) {
+					if (super.add(o)) {
+						System.out.println(" - " + cacheActionLabel.toLowerCase() + " cached file " + ((String) o));
+						if (dsd != null)
+							dsd.setStatusLabel(" - " + cacheActionLabel.toLowerCase() + " cached file " + ((String) o));
+						return true;
+					}
+					else return false;
+				}
+			};
+			if (handleCacheFolder(sourceCacheFolder, targetCacheFolder, monitor, cacheFolderPolicy))
+				sourceCacheFolder.delete();
+		}
+	}
+	
+	private static boolean handleCacheFolder(File sourceRoot, File targetRoot, Set copied, CachePolicy cachePolicy) throws IOException {
 		
 		//	keep track of whether or not directories are really empty
 		boolean sourceRootEmpty = cachePolicy.cleanup;
@@ -1844,14 +1925,16 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		return sourceRootEmpty;
 	}
 	
-	private static final void copyFile(String fileName, File sourceRoot, File targetRoot) throws IOException {
+	private static void copyFile(String fileName, File sourceRoot, File targetRoot) throws IOException {
+		copyFile(new File(sourceRoot, fileName), new File(targetRoot, fileName));
+	}
+	
+	private static void copyFile(File sourceFile, File targetFile) throws IOException {
 		
 		//	open source file
-		File sourceFile = new File(sourceRoot, fileName);
 		InputStream source = new BufferedInputStream(new FileInputStream(sourceFile));
 		
 		//	create target file
-		File targetFile = new File(targetRoot, fileName);
 		targetFile.getParentFile().mkdirs();
 		targetFile.createNewFile();
 		
@@ -2812,7 +2895,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 		final String[] ggLicenseInfo = {
 				"LICENSE",
 				"",
-				"Copyright (c) 2006-" + yearTimestamper.format(new Date(timestamp)) + ", Guido Sautter, IPD Boehm, Universität Karlsruhe (TH)",
+				"Copyright (c) 2006-" + yearTimestamper.format(new Date(timestamp)) + ", Guido Sautter, IPD Boehm, Universitaet Karlsruhe (TH)",
 				"All rights reserved.",
 				"Redistribution and use in source and binary forms, with or without",
 				"modification, are permitted provided that the following conditions are met:",
@@ -2822,7 +2905,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 				"    * Redistributions in binary form must reproduce the above copyright",
 				"      notice, this list of conditions and the following disclaimer in the",
 				"      documentation and/or other materials provided with the distribution.",
-				"    * Neither the name of the Universität Karlsruhe (TH) nor the",
+				"    * Neither the name of the Universitaet Karlsruhe (TH) nor the",
 				"      names of its contributors may be used to endorse or promote products",
 				"      derived from this software without specific prior written permission.",
 				"",
@@ -3443,6 +3526,20 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	
 	/**
 	 * Load a GoldenGATE Configuration with a given name from a choice of
+	 * locations. The configuration is loaded from the base folder. If the
+	 * config host is not null, it is checked for updates.
+	 * @param configName the name of the configuration to load
+	 * @param configHost the host to load the configuration from
+	 * @param baseFolder the base folder of the GoldenGATE installation
+	 * @return a GoldenGATE configuration loaded according to the specified
+	 *         parameters
+	 */
+	public static GoldenGateConfiguration getConfiguration(String configName, String configHost, File baseFolder) throws IOException {
+		return getConfiguration(configName, null, configHost, baseFolder, false, CACHE_UPDATE_POLICY_MOVE);
+	}
+	
+	/**
+	 * Load a GoldenGATE Configuration with a given name from a choice of
 	 * locations. If the argument config path is not null, the configuration is
 	 * loaded statically, i.e. without online updates, etc. If the config path
 	 * starts with 'http://', the configuration is loaded from the web; if it
@@ -3458,7 +3555,59 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	 *         parameters
 	 */
 	public static GoldenGateConfiguration getConfiguration(String configName, String configPath, String configHost, File baseFolder) throws IOException {
-		return getConfiguration(configName, configPath, configHost, baseFolder, CACHE_UPDATE_POLICY_MOVE);
+		return getConfiguration(configName, configPath, configHost, baseFolder, false, CACHE_UPDATE_POLICY_MOVE);
+	} // older, more widely known
+	
+	/**
+	 * Load a GoldenGATE Configuration with a given name from a choice of
+	 * locations. The configuration is loaded from the base folder. If the
+	 * config host is not null, it is checked for updates.
+	 * @param configName the name of the configuration to load
+	 * @param configHost the host to load the configuration from
+	 * @param baseFolder the base folder of the GoldenGATE installation
+	 * @param showStatusOnUpdate show a status dialog in case of an update?
+	 * @return a GoldenGATE configuration loaded according to the specified
+	 *         parameters
+	 */
+	public static GoldenGateConfiguration getConfiguration(String configName, String configHost, File baseFolder, boolean showStatusOnUpdate) throws IOException {
+		return getConfiguration(configName, null, configHost, baseFolder, showStatusOnUpdate, CACHE_UPDATE_POLICY_MOVE);
+	}
+	
+	/**
+	 * Load a GoldenGATE Configuration with a given name from a choice of
+	 * locations. If the argument config path is not null, the configuration is
+	 * loaded statically, i.e. without online updates, etc. If the config path
+	 * starts with 'http://', the configuration is loaded from the web; if it
+	 * starts with './', the path is interpreted relative to the argument base
+	 * folder; otherwise, it is interpreted as an absolute path. If the config
+	 * path is null, the configuration is loaded from the base folder. If the
+	 * config host is not null, it is checked for updates.
+	 * @param configName the name of the configuration to load
+	 * @param configPath the path to load the configuration from
+	 * @param configHost the host to load the configuration from
+	 * @param baseFolder the base folder of the GoldenGATE installation
+	 * @param showStatusOnUpdate show a status dialog in case of an update?
+	 * @return a GoldenGATE configuration loaded according to the specified
+	 *         parameters
+	 */
+	public static GoldenGateConfiguration getConfiguration(String configName, String configPath, String configHost, File baseFolder, boolean showStatusOnUpdate) throws IOException {
+		return getConfiguration(configName, null, configHost, baseFolder, showStatusOnUpdate, CACHE_UPDATE_POLICY_MOVE);
+	}
+	
+	/**
+	 * Load a GoldenGATE Configuration with a given name from a choice of
+	 * locations. The configuration is loaded from the base folder. If the
+	 * config host is not null, it is checked for updates.
+	 * @param configName the name of the configuration to load
+	 * @param configHost the host to load the configuration from
+	 * @param baseFolder the base folder of the GoldenGATE installation
+	 * @param cachePolicy how to handle any cached content present in a local
+	 *            configuration in case of an update?
+	 * @return a GoldenGATE configuration loaded according to the specified
+	 *         parameters
+	 */
+	public static GoldenGateConfiguration getConfiguration(String configName, String configHost, File baseFolder, int cachePolicy) throws IOException {
+		return getConfiguration(configName, null, configHost, baseFolder, false, cachePolicy);
 	}
 	
 	/**
@@ -3480,6 +3629,46 @@ public class ConfigurationUtils implements GoldenGateConstants {
 	 *         parameters
 	 */
 	public static GoldenGateConfiguration getConfiguration(String configName, String configPath, String configHost, File baseFolder, int cachePolicy) throws IOException {
+		return getConfiguration(configName, configPath, configHost, baseFolder, false, cachePolicy);
+	} // older, more widely known
+	
+	/**
+	 * Load a GoldenGATE Configuration with a given name from a choice of
+	 * locations. The configuration is loaded from the base folder. If the
+	 * config host is not null, it is checked for updates.
+	 * @param configName the name of the configuration to load
+	 * @param configHost the host to load the configuration from
+	 * @param baseFolder the base folder of the GoldenGATE installation
+	 * @param showStatusOnUpdate show a status dialog in case of an update?
+	 * @param cachePolicy how to handle any cached content present in a local
+	 *            configuration in case of an update?
+	 * @return a GoldenGATE configuration loaded according to the specified
+	 *         parameters
+	 */
+	public static GoldenGateConfiguration getConfiguration(String configName, String configHost, File baseFolder, boolean showStatusOnUpdate, int cachePolicy) throws IOException {
+		return getConfiguration(configName, null, configHost, baseFolder, showStatusOnUpdate, cachePolicy);
+	}
+	
+	/**
+	 * Load a GoldenGATE Configuration with a given name from a choice of
+	 * locations. If the argument config path is not null, the configuration is
+	 * loaded statically, i.e. without online updates, etc. If the config path
+	 * starts with 'http://', the configuration is loaded from the web; if it
+	 * starts with './', the path is interpreted relative to the argument base
+	 * folder; otherwise, it is interpreted as an absolute path. If the config
+	 * path is null, the configuration is loaded from the base folder. If the
+	 * config host is not null, it is checked for updates.
+	 * @param configName the name of the configuration to load
+	 * @param configPath the path to load the configuration from
+	 * @param configHost the host to load the configuration from
+	 * @param baseFolder the base folder of the GoldenGATE installation
+	 * @param showStatusOnUpdate show a status dialog in case of an update?
+	 * @param cachePolicy how to handle any cached content present in a local
+	 *            configuration in case of an update?
+	 * @return a GoldenGATE configuration loaded according to the specified
+	 *         parameters
+	 */
+	public static GoldenGateConfiguration getConfiguration(String configName, String configPath, String configHost, File baseFolder, boolean showStatusOnUpdate, int cachePolicy) throws IOException {
 		if (configName == null)
 			return null;
 		
@@ -3513,7 +3702,7 @@ public class ConfigurationUtils implements GoldenGateConstants {
 			ConfigurationDescriptor[] configurations = getConfigurations(configHost, baseFolder);
 			
 			//	find requested configuration
-			ConfigurationDescriptor configuration = getConfiguration(configurations, configName, baseFolder, cachePolicy, false, false);
+			ConfigurationDescriptor configuration = getConfiguration(configurations, configName, baseFolder, cachePolicy, false, showStatusOnUpdate);
 			if (configuration == null)
 				return null;
 			

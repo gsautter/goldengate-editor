@@ -10,11 +10,11 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Universität Karlsruhe (TH) nor the
+ *     * Neither the name of the Universitaet Karlsruhe (TH) nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY UNIVERSITÄT KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
+ * THIS SOFTWARE IS PROVIDED BY UNIVERSITAET KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
@@ -43,7 +43,7 @@ import de.uka.ipd.idaho.goldenGate.GoldenGATE;
 import de.uka.ipd.idaho.goldenGate.util.HelpChapterDataProviderBased;
 
 /**
- * Abstract implementetion of a GoldenGATE plugin. This class provides
+ * Abstract implementation of a GoldenGATE plugin. This class provides
  * implementations of the basic infrastructure like the setDataProvider(),
  * setParent() and isOperational() methods. In addition, it offers dummy
  * implementations of the GUI integration methods, whose return values indicate
@@ -61,7 +61,7 @@ public abstract class AbstractGoldenGatePlugin implements GoldenGatePlugin {
 	/**
 	 * A cloneable JMenuItem that can be constructed once and then cloned,
 	 * retaining the same text, layout, listeners, etc. This class is for cases
-	 * plaugins keep internal references to the items they return from the
+	 * plugins keep internal references to the items they return from the
 	 * getToolsMenuFunctionItems() method. In particular, this class enables
 	 * them to return clones instead of the actual menu items, so adding the
 	 * menu item to the 'Tools' menu of a sub window of a multi-window GUI does
@@ -171,7 +171,7 @@ public abstract class AbstractGoldenGatePlugin implements GoldenGatePlugin {
 	 * operation. Note: This default implementation checks if parent and
 	 * dataProvider are set to valid values. Subclasses overwriting this method
 	 * to check additional properties (e.g. references to other subclasses)
-	 * should include a super call in theit implementation of this method, or at
+	 * should include a super call in their implementation of this method, or at
 	 * least check parent and dataProvider for themselves.
 	 * @return true if and only if this GoldenGATE plugin is fully initialized
 	 *         and ready for operation
@@ -192,7 +192,7 @@ public abstract class AbstractGoldenGatePlugin implements GoldenGatePlugin {
 	/**
 	 * Retrieve a name for the plugin. This method MUST NOT return null. Note:
 	 * This default implementation returns the class name after the last dot.
-	 * Sub classes are welcone to overwrite this method in order to provide a
+	 * Sub classes are welcome to overwrite this method in order to provide a
 	 * informative and/or more user friendly name.
 	 * @return the name of this plugin
 	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePlugin#getPluginName()
@@ -208,7 +208,7 @@ public abstract class AbstractGoldenGatePlugin implements GoldenGatePlugin {
 	 * it, which invokes help('help-title') on the parent GoldenGATE object,
 	 * where 'help-title' is the String returned by the getTitle() method of the
 	 * HelpChapter object returned by the getHelp() method, thus the String
-	 * returned by hte getPluginName() method of the plugin.
+	 * returned by the getPluginName() method of the plugin.
 	 * @return a JMenuItem to be part of the help menu
 	 * @see de.uka.ipd.idaho.goldenGate.plugins.GoldenGatePlugin#getHelpMenuItem()
 	 */

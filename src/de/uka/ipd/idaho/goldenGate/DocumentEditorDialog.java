@@ -10,11 +10,11 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Universität Karlsruhe (TH) nor the
+ *     * Neither the name of the Universitaet Karlsruhe (TH) nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY UNIVERSITÄT KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
+ * THIS SOFTWARE IS PROVIDED BY UNIVERSITAET KARLSRUHE (TH) / KIT AND CONTRIBUTORS 
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
@@ -70,7 +70,7 @@ public abstract class DocumentEditorDialog extends DialogPanel {
 	/**
 	 * Constructor
 	 * @param host the GoldenGATE main window
-	 * @param title the titel for the dialog
+	 * @param title the title for the dialog
 	 * @param content the MutableAnnotation to display for editing
 	 */
 	public DocumentEditorDialog(GoldenGATE host, String title, MutableAnnotation content) {
@@ -81,7 +81,7 @@ public abstract class DocumentEditorDialog extends DialogPanel {
 //	 * Constructor
 //	 * @param owner the JFrame this DocumentEditorDialog is modal to
 //	 * @param host the GoldenGATE main window
-//	 * @param title the titel for the dialog
+//	 * @param title the title for the dialog
 //	 * @param content the MutableAnnotation to display for editing
 //	 */
 //	public DocumentEditorDialog(JFrame owner, GoldenGATE host, String title, MutableAnnotation content) {
@@ -92,7 +92,7 @@ public abstract class DocumentEditorDialog extends DialogPanel {
 //	 * Constructor
 //	 * @param owner the JDialog this DocumentEditorDialog is modal to
 //	 * @param host the GoldenGATE main window
-//	 * @param title the titel for the dialog
+//	 * @param title the title for the dialog
 //	 * @param content the MutableAnnotation to display for editing
 //	 */
 //	public DocumentEditorDialog(JDialog owner, GoldenGATE host, String title, MutableAnnotation content) {
@@ -103,7 +103,7 @@ public abstract class DocumentEditorDialog extends DialogPanel {
 	 * Constructor
 	 * @param owner the window this DocumentEditorDialog is modal to
 	 * @param host the GoldenGATE main window
-	 * @param title the titel for the dialog
+	 * @param title the title for the dialog
 	 * @param content the MutableAnnotation to display for editing
 	 */
 	public DocumentEditorDialog(Window owner, GoldenGATE host, String title, MutableAnnotation content) {
@@ -114,7 +114,7 @@ public abstract class DocumentEditorDialog extends DialogPanel {
 	 * Constructor
 	 * @param host the GoldenGATE main window
 	 * @param parent the DocumentEditorPanel to use as a template for the layout
-	 * @param title the titel for the dialog
+	 * @param title the title for the dialog
 	 * @param content the MutableAnnotation to display for editing
 	 */
 	public DocumentEditorDialog(GoldenGATE host, DocumentEditor parent, String title, MutableAnnotation content) {
@@ -130,7 +130,7 @@ public abstract class DocumentEditorDialog extends DialogPanel {
 //	 * @param owner the JFrame this DocumentEditorDialog is modal to
 //	 * @param host the GoldenGATE main window
 //	 * @param parent the DocumentEditorPanel to use as a template for the layout
-//	 * @param title the titel for the dialog
+//	 * @param title the title for the dialog
 //	 * @param content the MutableAnnotation to display for editing
 //	 */
 //	public DocumentEditorDialog(JFrame owner, GoldenGATE host, DocumentEditor parent, String title, MutableAnnotation content) {
@@ -146,7 +146,7 @@ public abstract class DocumentEditorDialog extends DialogPanel {
 //	 * @param owner the JDialog this DocumentEditorDialog is modal to
 //	 * @param host the GoldenGATE main window
 //	 * @param parent the DocumentEditorPanel to use as a template for the layout
-//	 * @param title the titel for the dialog
+//	 * @param title the title for the dialog
 //	 * @param content the MutableAnnotation to display for editing
 //	 */
 //	public DocumentEditorDialog(JDialog owner, GoldenGATE host, DocumentEditor parent, String title, MutableAnnotation content) {
@@ -162,7 +162,7 @@ public abstract class DocumentEditorDialog extends DialogPanel {
 	 * @param owner the window this DocumentEditorDialog is modal to
 	 * @param host the GoldenGATE main window
 	 * @param parent the DocumentEditorPanel to use as a template for the layout
-	 * @param title the titel for the dialog
+	 * @param title the title for the dialog
 	 * @param content the MutableAnnotation to display for editing
 	 */
 	public DocumentEditorDialog(Window owner, GoldenGATE host, DocumentEditor parent, String title, MutableAnnotation content) {
