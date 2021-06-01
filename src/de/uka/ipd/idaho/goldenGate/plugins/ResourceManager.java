@@ -32,9 +32,25 @@ import de.uka.ipd.idaho.goldenGate.util.ResourceSelector;
 
 /**
  * @author sautter
- *
  */
 public interface ResourceManager extends GoldenGatePlugin {
+	
+	/**
+	 * Interface indicating a resource manager wants some or all resources
+	 * loaded before they are first needed, e.g. to contribute them to some
+	 * API, or simply to speed up resource retrieval. Implementors should make
+	 * sure not to pre-load all too memory intensive resources.
+	 * 
+	 * @author sautter
+	 */
+	public static interface PreLoadingResourceManager extends ResourceManager {
+		
+		/**
+		 * Execute the pre-loading process. This method is called after all
+		 * plugins are have their parents set and are initialized.
+		 */
+		public abstract void preLoadResources();
+	}
 	
 	/**
 	 * @return the names of all Resources managed by this ResourceManager

@@ -3323,6 +3323,7 @@ public class DocumentEditor extends JPanel implements FontEditable, GoldenGateCo
 						if (add.isCommitted()) {
 							
 							//	get Annotation type
+							//	TODO have annotation type entered in right in selector dialog !!!
 							String annotationType = JOptionPane.showInputDialog(top, "Please enter the type to add the Annotations with.", "Enter Annotation Type", JOptionPane.QUESTION_MESSAGE);
 							if (annotationType != null) {
 								

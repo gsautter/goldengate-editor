@@ -261,7 +261,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 			if ((this.editor != null) && this.editor.isDirty()) {
 				try {
 					storeSettingsResource(this.editor.name, this.editor.getSettings());
-					parent.notifyResourcesChanged(this.getClass().getName());
+					parent.notifyResourceUpdated(DefaultCustomFunctionManager.this.getClass().getName(), this.editor.name);
 					CustomFunction.notifyModified();
 				}
 				catch (IOException ioe) {
@@ -314,7 +314,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 					customFunctionName += FILE_EXTENSION;
 				try {
 					if (storeSettingsResource(customFunctionName, customFunction)) {
-						parent.notifyResourcesChanged(this.getClass().getName());
+						parent.notifyResourceUpdated(DefaultCustomFunctionManager.this.getClass().getName(), customFunctionName);
 						CustomFunction.notifyModified();
 						return true;
 					}
@@ -329,7 +329,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 				try {
 					if (dataProvider.deleteData(name)) {
 						this.resourceNameList.refresh();
-						parent.notifyResourcesChanged(this.getClass().getName());
+						parent.notifyResourceDeleted(DefaultCustomFunctionManager.this.getClass().getName(), name);
 						CustomFunction.notifyModified();
 						return true;
 					} else {
@@ -348,7 +348,7 @@ public class DefaultCustomFunctionManager extends AbstractResourceManager implem
 		public void commitChanges() {
 			if ((this.editor != null) && this.editor.isDirty()) try {
 				storeSettingsResource(this.editor.name, this.editor.getSettings());
-				parent.notifyResourcesChanged(this.getClass().getName());
+				parent.notifyResourceUpdated(DefaultCustomFunctionManager.this.getClass().getName(), this.editor.name);
 				CustomFunction.notifyModified();
 			}
 			catch (IOException ioe) {}

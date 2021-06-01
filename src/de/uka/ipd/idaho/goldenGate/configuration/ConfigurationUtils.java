@@ -1808,6 +1808,8 @@ public class ConfigurationUtils implements GoldenGateConstants {
 					possibleCacheParents.addLast(subFolders[s]);
 			}
 		}
+		if (cacheFolderNameSet.isEmpty())
+			return;
 		
 		//	check which caches to actually update
 		System.out.println(" - checking cache folders");

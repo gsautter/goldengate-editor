@@ -74,7 +74,7 @@ public abstract class ActiveDocumentFormatProvider extends AbstractDocumentForma
 	
 	/**
 	 * Apply the configured document processor to a document. This method may
-	 * throw a runtime exception (that the invocing code has to react to) if the
+	 * throw a runtime exception (that the invoking code has to react to) if the
 	 * configured document processor wants to prevent loading or saving a given
 	 * document, e.g. due to validation errors.
 	 * @param doc the document to process
@@ -279,7 +279,7 @@ public abstract class ActiveDocumentFormatProvider extends AbstractDocumentForma
 					ActiveDocumentFormatProvider.this.dpInteractive = this.processorInteractive.isSelected();
 				}
 				storeSettingsResource(DP_CONFIG_FILE_NAME, config);
-				parent.notifyResourcesChanged(this.getClass().getName());
+				parent.notifyResourceUpdated(this.getClass().getName(), getDocumentFormatName());
 			}
 			catch (IOException ioe) {}
 		}
@@ -321,6 +321,16 @@ public abstract class ActiveDocumentFormatProvider extends AbstractDocumentForma
 				}
 			}
 		}
+	}
+	
+	String getDocumentFormatName() {
+		String[] lfns = this.getLoadFormatNames();
+		if (lfns.length != 0)
+			return lfns[0];
+		String[] sfns = this.getLoadFormatNames();
+		if (sfns.length != 0)
+			return sfns[0];
+		return null;
 	}
 	
 	/**

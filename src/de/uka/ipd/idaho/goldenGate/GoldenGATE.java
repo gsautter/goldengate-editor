@@ -102,6 +102,7 @@ import de.uka.ipd.idaho.goldenGate.plugins.DocumentFormat;
 import de.uka.ipd.idaho.goldenGate.plugins.DocumentFormatProvider;
 import de.uka.ipd.idaho.goldenGate.plugins.DocumentLoader;
 import de.uka.ipd.idaho.goldenGate.plugins.DocumentLoader.DocumentData;
+import de.uka.ipd.idaho.goldenGate.plugins.ResourceManager.PreLoadingResourceManager;
 import de.uka.ipd.idaho.goldenGate.plugins.DocumentProcessor;
 import de.uka.ipd.idaho.goldenGate.plugins.DocumentProcessorManager;
 import de.uka.ipd.idaho.goldenGate.plugins.DocumentSaveOperation;
@@ -189,42 +190,47 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 		for (int p = 0; p < plugins.length; p++)
 			this.registerPlugin(plugins[p]);
 		
+		//	collect pre-loading resource managers
+		final ArrayList resourcePreLoadRunnables = new ArrayList();
+		
 		//	set parent & initialize plugins
 		ssm.addStatusLine("Initializing plugins ...");
-		for (int p = 0; p < plugins.length; p++) {
-			try {
-				plugins[p].setParent(this);
-				plugins[p].init();
-			}
-			catch (Throwable t) {
-				System.out.println(t.getClass().getName() + " (" + t.getMessage() + ") while initializing " + plugins[p].getClass().getName());
-				t.printStackTrace(System.out);
-				plugins[p] = null;
+		for (int p = 0; p < plugins.length; p++) try {
+			plugins[p].setParent(this);
+			plugins[p].init();
+			if (plugins[p] instanceof PreLoadingResourceManager) {
+				final PreLoadingResourceManager plrm = ((PreLoadingResourceManager) plugins[p]);
+				resourcePreLoadRunnables.add(new Runnable() {
+					public void run() {
+						plrm.preLoadResources();
+					}
+				});
 			}
 		}
-		
-		//	collect operational plugins
-		ssm.addStatusLine("Checking plugins ...");
-		ArrayList operationalPlugins = new ArrayList();
-		for (int p = 0; p < plugins.length; p++) {
-			if (plugins[p] == null)
-				continue;
-			ssm.addStatusLine(" - " + plugins[p].getPluginName());
-			if (plugins[p].isOperational())
-				operationalPlugins.add(plugins[p]);
+		catch (Throwable t) {
+			System.out.println(t.getClass().getName() + " (" + t.getMessage() + ") while initializing " + plugins[p].getClass().getName());
+			t.printStackTrace(System.out);
+			plugins[p] = null;
 		}
-		
-		
-		final ArrayList lazyLoadRunnables = new ArrayList();
+//		
+//		//	collect operational plugins
+//		ssm.addStatusLine("Checking plugins ...");
+//		ArrayList operationalPlugins = new ArrayList();
+//		for (int p = 0; p < plugins.length; p++) {
+//			if (plugins[p] == null)
+//				continue;
+//			ssm.addStatusLine(" - " + plugins[p].getPluginName());
+//			if (plugins[p].isOperational())
+//				operationalPlugins.add(plugins[p]);
+//		}
 		
 		//	do not pre-load in master configuration, as this likely is unnecessarily costly
 		if (!this.configuration.isMasterConfiguration()) {
 			
+			// retrieve custom functions so opening first document is faster
 			ssm.addStatusLine("Initializing Custom Functions ...");
 			if ((this.customFunctionManager != null)) {
-				
-				// retrieve custom functions so opening first document is faster
-				lazyLoadRunnables.add(new Runnable() {
+				resourcePreLoadRunnables.add(new Runnable() {
 					public void run() {
 						CustomFunction[] customFunctions = getCustomFunctions();
 						for (int c = 0; c < customFunctions.length; c++)
@@ -233,11 +239,10 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 				});
 			}
 			
+			// retrieve custom shortcuts so opening first document is faster
 			ssm.addStatusLine("Initializing Custom Shortcuts ...");
 			if (this.customShortcutManager != null) {
-				
-				// retrieve custom shortcuts so opening first document is faster
-				lazyLoadRunnables.add(new Runnable() {
+				resourcePreLoadRunnables.add(new Runnable() {
 					public void run() {
 						String[] customShortcutNames = customShortcutManager.getResourceNames();
 						for (int c = 0; c < customShortcutNames.length; c++) {
@@ -249,42 +254,32 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 				});
 			}
 		}
-		
-		ssm.addStatusLine("Initializing Tokenizers ...");
 //		
-//		/*
-//		 * run lazy loading processes (if available mememory is sufficient (128
-//		 * MB or more) - if memory is scarce, we cannot afford pre-loading stuff
-//		 * that might not even be used later on)
-//		 */
-//		if (Runtime.getRuntime().maxMemory() > (128 * 1024 * 1024)) {
-//			new Thread() {
+//		ssm.addStatusLine("Initializing Tokenizers ...");
+//		if (this.tokenizerManager != null) {
+//			resourcePreLoadRunnables.add(new Runnable() {
 //				public void run() {
-//					for (int r = 0; r < lazyLoadRunnables.size(); r++)
-//						try {
-//							((Runnable) lazyLoadRunnables.get(r)).run();
-//						} catch (Throwable t) {
-//							System.out.println(t.getClass().getName() + " (" + t.getMessage() + "):");
-//							t.printStackTrace(System.out);
-//						}
-//					lazyLoadingDone = true;
+//					String[] tokenizerNames = tokenizerManager.getResourceNames();
+//					for (int c = 0; c < tokenizerNames.length; c++)
+//						tokenizerManager.getTokenizer(tokenizerNames[c]);
 //				}
-//			}.start();
+//			});
 //		}
-//		else this.lazyLoadingDone = true;
-		//	memory limit is no good, for without pre-loading, opening first document takes forever
-		new Thread() {
+		
+		//	run resource pre-loading so first document opens more quickly
+		Thread resourcePreLoadThread = new Thread() {
 			public void run() {
-				for (int r = 0; r < lazyLoadRunnables.size(); r++)
-					try {
-						((Runnable) lazyLoadRunnables.get(r)).run();
-					} catch (Throwable t) {
-						System.out.println(t.getClass().getName() + " (" + t.getMessage() + "):");
-						t.printStackTrace(System.out);
-					}
-				lazyLoadingDone = true;
+				for (int r = 0; r < resourcePreLoadRunnables.size(); r++) try {
+					((Runnable) resourcePreLoadRunnables.get(r)).run();
+				}
+				catch (Throwable t) {
+					System.out.println(t.getClass().getName() + " (" + t.getMessage() + "):");
+					t.printStackTrace(System.out);
+				}
+				resourcePreLoadingDone = true;
 			}
-		}.start();
+		};
+		resourcePreLoadThread.start();
 		
 		//	build help only if not headless
 		if (GraphicsEnvironment.isHeadless())
@@ -310,7 +305,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 * Retrieve a 'File' menu with the options available from the current
 	 * configuration. This method is a convenience signature for its
 	 * eight-argument sibling, designed for retrieving only the saving options
-	 * in a one-document, non-main window, eg some sub dialog.
+	 * in a one-document, non-main window, e.g. some sub dialog.
 	 * @param targetProvider the provider to retrieve the target DocumentEditor
 	 *            from when invoking actions that are directed at a specific
 	 *            document
@@ -324,8 +319,8 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	/**
 	 * Have GoldenGATE fill a 'File' menu with the options available from the
 	 * current configuration. This method is a convenience signature for its
-	 * nine-argument sibling, designed for retrieving only the saving options in
-	 * a one-document, non-main window, eg some sub dialog.
+	 * nine-argument sibling, designed for retrieving only the saving options
+	 * in a one-document, non-main window, e.g. some sub dialog.
 	 * @param fileMenu the JMenu to fill
 	 * @param targetProvider the provider to retrieve the target DocumentEditor
 	 *            from when invoking actions that are directed at a specific
@@ -344,11 +339,11 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 *            from when invoking actions that are directed at a specific
 	 *            document
 	 * @param isMainWindow are the items intended for the main window? (will
-	 *            include loading, closing and exitting items if set to true)
+	 *            include loading, closing and exiting items if set to true)
 	 * @param documentDependentMenuItems a list for adding menu items to that
-	 *            depend on at least one document being open, eg for activating
+	 *            depend on at least one document being open, e.g. for activating
 	 *            or deactivating them depending on whether a document is open
-	 *            or not. This is recommendet in the editor main window only,
+	 *            or not. This is recommended in the editor main window only,
 	 *            and sensible only if the window can hold multiple open
 	 *            documents at once.
 	 */
@@ -368,11 +363,11 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 *            from when invoking actions that are directed at a specific
 	 *            document
 	 * @param isMainWindow are the items intended for the main window? (will
-	 *            include loading, closing and exitting items if set to true)
+	 *            include loading, closing and exiting items if set to true)
 	 * @param documentDependentMenuItems a list for adding menu items to that
-	 *            depend on at least one document being open, eg for activating
+	 *            depend on at least one document being open, e.g. for activating
 	 *            or deactivating them depending on whether a document is open
-	 *            or not. This is recommendet in the editor main window only,
+	 *            or not. This is recommended in the editor main window only,
 	 *            and sensible only if the window can hold multiple open
 	 *            documents at once.
 	 */
@@ -387,14 +382,14 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 *            from when invoking actions that are directed at a specific
 	 *            document
 	 * @param isMainWindow are the items intended for the main window? (will
-	 *            include loading, closing and exitting items if set to true)
+	 *            include loading, closing and exiting items if set to true)
 	 * @param isMultiDocument is the main window capable of having multiple
 	 *            documents open at the same time? (if set to true, will include
 	 *            the menu items for closing all documents at once?)
 	 * @param documentDependentMenuItems a list for adding menu items to that
-	 *            depend on at least one document being open, eg for activating
+	 *            depend on at least one document being open, e.g. for activating
 	 *            or deactivating them depending on whether a document is open
-	 *            or not. This is recommendet in the editor main window only,
+	 *            or not. This is recommended in the editor main window only,
 	 *            and sensible only if the window can hold multiple open
 	 *            documents at once.
 	 */
@@ -412,14 +407,14 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 *            from when invoking actions that are directed at a specific
 	 *            document
 	 * @param isMainWindow are the items intended for the main window? (will
-	 *            include loading, closing and exitting items if set to true)
+	 *            include loading, closing and exiting items if set to true)
 	 * @param isMultiDocument is the main window capable of having multiple
 	 *            documents open at the same time? (if set to true, will include
 	 *            the menu items for closing all documents at once?)
 	 * @param documentDependentMenuItems a list for adding menu items to that
-	 *            depend on at least one document being open, eg for activating
+	 *            depend on at least one document being open, e.g. for activating
 	 *            or deactivating them depending on whether a document is open
-	 *            or not. This is recommendet in the editor main window only,
+	 *            or not. This is recommended in the editor main window only,
 	 *            and sensible only if the window can hold multiple open
 	 *            documents at once.
 	 */
@@ -438,19 +433,19 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 *            of them?
 	 * @param includeClose include the menu items for closing documents?
 	 * @param includeCloseAll include the menu items for closing all documents
-	 *            at once? This is recommendet in the editor main window only,
+	 *            at once? This is recommended in the editor main window only,
 	 *            and sensible only if the window can hold multiple open
 	 *            documents at once.
-	 * @param includeChangeConfiguration include the menu items for exitting
+	 * @param includeChangeConfiguration include the menu items for exiting
 	 *            GoldenGATE and restarting it with a newly selected
-	 *            configuration? (this is recommendet only in the editor main
+	 *            configuration? (this is recommended only in the editor main
 	 *            window)
-	 * @param includeExit include the menu items for exitting GoldenGATE? (this
-	 *            is recommendet only in the editor main window)
+	 * @param includeExit include the menu items for exiting GoldenGATE? (this
+	 *            is recommended only in the editor main window)
 	 * @param documentDependentMenuItems a list for adding menu items to that
-	 *            depend on at least one document being open, eg for activating
+	 *            depend on at least one document being open, e.g. for activating
 	 *            or deactivating them depending on whether a document is open
-	 *            or not. This is recommendet in the editor main window only,
+	 *            or not. This is recommended in the editor main window only,
 	 *            and sensible only if the window can hold multiple open
 	 *            documents at once.
 	 */
@@ -482,7 +477,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	 * @param includeExit include the menu items for exiting GoldenGATE? (this
 	 *            is recommended only in the editor main window)
 	 * @param documentDependentMenuItems a list for adding menu items to that
-	 *            depend on at least one document being open, eg for activating
+	 *            depend on at least one document being open, e.g. for activating
 	 *            or deactivating them depending on whether a document is open
 	 *            or not. This is recommended in the editor main window only,
 	 *            and sensible only if the window can hold multiple open
@@ -2823,8 +2818,7 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	private Vector resourceObservers = new Vector();
 	
 	/**
-	 * Register a ResourceObserver so it is notified when
-	 * resourceChanged(String) is called.
+	 * Register a ResourceObserver so it is notified when resources change.
 	 * @param observer the ResourceObserver to register
 	 */
 	public void registerResourceObserver(ResourceObserver observer) {
@@ -2833,24 +2827,24 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	
 	/**
 	 * Unregister a ResourceObserver so it is not notified any more when
-	 * resourceChanged(String) is called.
+	 * resources change.
 	 * @param observer the ResourceObserver to unregister
 	 */
 	public void unregisterResourceObserver(ResourceObserver observer) {
 		this.resourceObservers.remove(observer);
 	}
-	
-	/**
-	 * Notify all registered ResourceObservers that the resources provided by
-	 * the ResourceManager with the specified name have changed.
-	 * @param resourceProviderClassName the class name of the ResourceManager
-	 *            issuing the change
-	 * @deprecated use notifyResourceUpdated() and notifyResourceDeleted() instead
-	 */
-	public void notifyResourcesChanged(String resourceProviderClassName) {
-		for (int o = 0; o < this.resourceObservers.size(); o++)
-			((ResourceObserver) this.resourceObservers.get(o)).resourcesChanged(resourceProviderClassName);
-	}
+//	
+//	/**
+//	 * Notify all registered ResourceObservers that the resources provided by
+//	 * the ResourceManager with the specified name have changed.
+//	 * @param resourceProviderClassName the class name of the ResourceManager
+//	 *            issuing the change
+//	 * @deprecated use notifyResourceUpdated() and notifyResourceDeleted() instead
+//	 */
+//	public void notifyResourcesChanged(String resourceProviderClassName) {
+//		for (int o = 0; o < this.resourceObservers.size(); o++)
+//			((ResourceObserver) this.resourceObservers.get(o)).resourcesChanged(resourceProviderClassName);
+//	}
 	
 	/**
 	 * Notify all registered resource observers that some resource provided by
@@ -3118,6 +3112,13 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	}
 	
 	/**
+	 * @return the configuration underlying this GoldenGATE instance
+	 */
+	public GoldenGateConfiguration getConfiguration() {
+		return this.configuration;
+	}
+	
+	/**
 	 * @return the name of the configuration wrapped in this GoldenGATE instance
 	 */
 	public String getConfigurationName() {
@@ -3162,15 +3163,15 @@ public class GoldenGATE implements GoldenGateConstants, TestDocumentProvider {
 	public static final int EXIT_CHANGE_CONFIGURATION = 2;
 	
 	private int status = STARTING;
-	private boolean lazyLoadingDone = false;
+	private boolean resourcePreLoadingDone = false;
 	
 	/**
 	 * @return true if GoldenGATE has finished the startup process for the
-	 *         current configuration, i.e. if the loading phase has finished and
-	 *         all the leazy loading processes have run
+	 *         current configuration, i.e. if the loading phase has finished
+	 *         and all the resource pre-loading processes have run
 	 */
 	public boolean isStartupFinished() {
-		return ((this.status == RUNNING) && this.lazyLoadingDone);
+		return ((this.status == RUNNING) && this.resourcePreLoadingDone);
 	}
 	
 	/**

@@ -204,12 +204,6 @@ public interface GoldenGateConfiguration extends GoldenGateConstants {
 	public abstract void storeSettings(Settings settings) throws IOException;
 	
 	/**
-	 * @return the base URL for the GoldenGATE help
-	 * @deprecated use <code>getHelpBaseDataProvider()</code> instead
-	 */
-	public abstract String getHelpBaseURL();
-	
-	/**
 	 * Obtain a data provider dedicated for the help of the configuration. The
 	 * data provider may be read-only.
 	 * @return a data provider pointing to the documentation folder

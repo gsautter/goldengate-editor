@@ -200,7 +200,7 @@ public class DefaultTokenizerManager extends AbstractResourceManager/*SettingsPa
 				if (!regExName.endsWith(FILE_EXTENSION)) regExName += FILE_EXTENSION;
 				try {
 					if (storeStringResource(regExName, regEx)) {
-						parent.notifyResourcesChanged(this.getClass().getName());
+						parent.notifyResourceUpdated(DefaultTokenizerManager.this.getClass().getName(), regExName);
 						return true;
 					}
 				} catch (IOException e) {}
@@ -214,7 +214,7 @@ public class DefaultTokenizerManager extends AbstractResourceManager/*SettingsPa
 				try {
 					if (dataProvider.deleteData(name)) {
 						this.resourceNameList.refresh();
-						parent.notifyResourcesChanged(this.getClass().getName());
+						parent.notifyResourceDeleted(DefaultTokenizerManager.this.getClass().getName(), name);
 						return true;
 					}
 					else {
@@ -236,7 +236,7 @@ public class DefaultTokenizerManager extends AbstractResourceManager/*SettingsPa
 			if ((this.editor != null) && this.editor.isDirty()) {
 				try {
 					storeStringResource(this.editor.name, this.editor.getContent());
-					parent.notifyResourcesChanged(this.getClass().getName());
+					parent.notifyResourceUpdated(DefaultTokenizerManager.this.getClass().getName(), this.editor.name);
 				}
 				catch (IOException ioe) {
 					if (JOptionPane.showConfirmDialog(this, (ioe.getClass().getName() + " (" + ioe.getMessage() + ")\nwhile saving file to " + this.editor.name + "\nProceed?"), "Could Not Save Tokenizer", JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
@@ -267,7 +267,7 @@ public class DefaultTokenizerManager extends AbstractResourceManager/*SettingsPa
 		public void commitChanges() {
 			if ((this.editor != null) && this.editor.isDirty()) try {
 				storeStringResource(this.editor.name, this.editor.getContent());
-				parent.notifyResourcesChanged(this.getClass().getName());
+				parent.notifyResourceUpdated(DefaultTokenizerManager.this.getClass().getName(), this.editor.name);
 			}
 			catch (IOException ioe) {}
 		}

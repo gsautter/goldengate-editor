@@ -239,7 +239,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 				if (!customShortcutName.endsWith(FILE_EXTENSION)) customShortcutName += FILE_EXTENSION;
 				try {
 					if (storeSettingsResource(customShortcutName, customShortcut)) {
-						parent.notifyResourcesChanged(this.getClass().getName());
+						parent.notifyResourceUpdated(DefaultCustomShortcutManager.this.getClass().getName(), customShortcutName);
 						return true;
 					}
 				}
@@ -254,7 +254,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 				try {
 					if (dataProvider.deleteData(name)) {
 						this.resourceNameList.refresh();
-						parent.notifyResourcesChanged(this.getClass().getName());
+						parent.notifyResourceDeleted(DefaultCustomShortcutManager.this.getClass().getName(), name);
 						return true;
 					} else {
 						JOptionPane.showMessageDialog(this, ("Could not delete " + name), "Delete Failed", JOptionPane.INFORMATION_MESSAGE);
@@ -275,7 +275,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 			if ((this.editor != null) && this.editor.isDirty()) {
 				try {
 					storeSettingsResource(this.editor.name, this.editor.getSettings());
-					parent.notifyResourcesChanged(this.getClass().getName());
+					parent.notifyResourceUpdated(DefaultCustomShortcutManager.this.getClass().getName(), this.editor.name);
 				}
 				catch (IOException ioe) {
 					if (JOptionPane.showConfirmDialog(this, (ioe.getClass().getName() + " (" + ioe.getMessage() + ")\nwhile saving file to " + this.editor.name + "\nProceed?"), "Could Not Save CustomShortcut", JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
@@ -310,7 +310,7 @@ public class DefaultCustomShortcutManager extends AbstractResourceManager implem
 		public void commitChanges() {
 			if ((this.editor != null) && this.editor.isDirty()) try {
 				storeSettingsResource(this.editor.name, this.editor.getSettings());
-				parent.notifyResourcesChanged(this.getClass().getName());
+				parent.notifyResourceUpdated(DefaultCustomShortcutManager.this.getClass().getName(), this.editor.name);
 			}
 			catch (IOException ioe) {}
 		}

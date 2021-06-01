@@ -58,7 +58,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -92,10 +94,12 @@ public class FileConfiguration extends AbstractConfiguration {
 	private boolean allowWebAccess;
 	
 	private StringVector fileList = new StringVector();
+	private boolean fileListUnsorted = false;
 	private int cacheMaxBytes = 2048;
 	private Map byteCache = Collections.synchronizedMap(new HashMap());
 	
-	private StringVector localResourceList;
+//	private StringVector localResourceList;
+	private Set localResourceList;
 	
 	/**
 	 * Constructor
@@ -167,11 +171,13 @@ public class FileConfiguration extends AbstractConfiguration {
 		if (this.isMaster)
 			this.localResourceList = null;
 		else {
-			this.localResourceList = new StringVector();
+//			this.localResourceList = new StringVector();
+			this.localResourceList = Collections.synchronizedSet(new LinkedHashSet());
 			File localResourceFile = new File(this.basePath, "localResources.cnfg");
 			if (localResourceFile.exists()) try {
 				StringVector localResourceList = StringVector.loadList(localResourceFile);
-				this.localResourceList.addContent(localResourceList);
+//				this.localResourceList.addContent(localResourceList);
+				this.localResourceList.addAll(localResourceList.asList());
 			}
 			catch (IOException ioe) {
 				System.out.println("Could not load local resource list: " + ioe.getMessage());
@@ -576,6 +582,10 @@ public class FileConfiguration extends AbstractConfiguration {
 	 * @see de.uka.ipd.idaho.goldenGate.GoldenGateConfiguration#getDataNames()
 	 */
 	public String[] getDataNames() {
+		if (this.fileListUnsorted) {
+			this.fileList.sortLexicographically(false, false);
+			this.fileListUnsorted = false;
+		}
 		return this.fileList.toStringArray();
 	}
 	
@@ -783,11 +793,13 @@ public class FileConfiguration extends AbstractConfiguration {
 			if (existingDataFile.exists())
 				existingDataFile.renameTo(new File(this.dataFileParent, (this.dataFileName + "." + this.dataTime + ".old")));
 			else if (localResourceList != null)
-				localResourceList.addElementIgnoreDuplicates(this.dataName);
+//				localResourceList.addElementIgnoreDuplicates(this.dataName);
+				localResourceList.add(this.dataName);
 			this.dataOutFile.renameTo(new File(this.dataFileParent, this.dataFileName));
 			byteCache.remove(this.dataName);
 			fileList.addElementIgnoreDuplicates(this.dataName);
-			fileList.sortLexicographically(false, false);
+			fileListUnsorted = true;
+			//fileList.sortLexicographically(false, false);
 		}
 		
 		protected void finalize() throws Throwable {
@@ -814,7 +826,10 @@ public class FileConfiguration extends AbstractConfiguration {
 			localResourceFile = new File(this.basePath, "localResources.cnfg");
 		}
 		try {
-			this.localResourceList.storeContent(localResourceFile);
+//			this.localResourceList.storeContent(localResourceFile);
+			StringVector localResourceList = new StringVector();
+			localResourceList.asList().addAll(this.localResourceList);
+			localResourceList.storeContent(localResourceFile);
 		}
 		catch (IOException ioe) {
 			System.out.println("Could not store local resource list: " + ioe.getMessage());

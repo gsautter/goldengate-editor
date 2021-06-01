@@ -290,20 +290,20 @@ public class GoldenGateEditorBatch implements GoldenGateConstants {
 			e.printStackTrace(systemOut);
 		}
 		
-		//	load GoldenGATE Imagine specific settings
-		final Settings ggiSettings = Settings.loadSettings(new File(BASE_PATH, "GoldenGateBatch.cnfg"));
+		//	load GoldenGATE Batch specific settings
+		Settings settings = Settings.loadSettings(new File(BASE_PATH, "GoldenGateBatch.cnfg"));
 		
 		//	get list of image markup tools to run
-		String imtNameString = ggiSettings.getSetting("documentProcessors");
-		if (imtNameString == null) {
+		String dpNameString = settings.getSetting("documentProcessors");
+		if (dpNameString == null) {
 			systemOut.println("No Document Processors configured to run, check entry" +
 					"\r\n'documentProcessors' in GoldenGateBatch.cnfg");
 			System.exit(0);
 		}
-		String[] imtNames = imtNameString.split("\\s+");
+		String[] dpNames = dpNameString.split("\\s+");
 		
 		//	use configuration specified in settings (default to 'Default.imagine' for now)
-		String ggConfigName = ggiSettings.getSetting("configName");
+		String ggConfigName = settings.getSetting("configName");
 		
 		//	open GoldenGATE Imagine window
 		GoldenGateConfiguration ggConfig = null;
@@ -318,31 +318,21 @@ public class GoldenGateEditorBatch implements GoldenGateConstants {
 		
 		//	remote configuration selected
 		else ggConfig = new FileConfiguration(ggConfigName, new File(new File(BASE_PATH, CONFIG_FOLDER_NAME), ggConfigName), false, true, null);
-//		
-//		//	if cache path set, add settings for page image and supplement cache
-//		if (cacheRootPath != null) {
-//			if (!cacheRootPath.endsWith("/"))
-//				cacheRootPath += "/";
-//			Settings set = ggConfig.getSettings();
-//			set.setSetting("cacheRootFolder", cacheRootPath);
-//			set.setSetting("pageImageFolder", (cacheRootPath + "PageImages"));
-//			set.setSetting("supplementFolder", (cacheRootPath + "Supplements"));
-//		}
 		
 		//	instantiate GoldenGATE Core
 		GoldenGATE goldenGate = GoldenGATE.openGoldenGATE(ggConfig, false, false);
 		systemOut.println("GoldenGATE core created, configuration is " + ggConfigName);
 		
 		//	get individual document processors
-		DocumentProcessor[] dps = new DocumentProcessor[imtNames.length];
-		for (int t = 0; t < imtNames.length; t++) {
-			dps[t] = goldenGate.getDocumentProcessorForName(imtNames[t]);
+		DocumentProcessor[] dps = new DocumentProcessor[dpNames.length];
+		for (int t = 0; t < dpNames.length; t++) {
+			dps[t] = goldenGate.getDocumentProcessorForName(dpNames[t]);
 			if (dps[t] == null) {
-				systemOut.println("Document Processor '" + imtNames[t] + "' not found," +
+				systemOut.println("Document Processor '" + dpNames[t] + "' not found," +
 						"\r\ncheck entry 'documentProcessors' in GoldenGateBatch.cnfg");
 				System.exit(0);
 			}
-			else systemOut.println("Image Markup Tool '" + imtNames[t] + "' loaded");
+			else systemOut.println("Document Processor '" + dpNames[t] + "' loaded");
 		}
 		
 		//	create progress monitor forking steps to console
