@@ -113,7 +113,7 @@ public interface GoldenGatePluginDataProvider {
 	public abstract boolean isDataEditable();
 
 	/**
-	 * Ask if acccessing the web is allowed.
+	 * Ask if accessing the web is allowed.
 	 * @return true if a GoldenGATE plugin is generally allowed to access the
 	 *         network and web
 	 */
